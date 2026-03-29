@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!next.config.js
