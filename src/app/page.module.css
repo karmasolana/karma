@@ -4,9 +4,18 @@
 .logoText { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
 .walletBtn { font-size: 12px !important; height: 34px !important; padding: 0 16px !important; border-radius: 17px !important; background: #8b5cf6 !important; }
 
-.hero { text-align: center; padding: 24px 0 20px; }
-.priceLabel { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 4px; }
-.price { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+/* Swap card with integrated price */
+.swapCard { padding: 20px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
+.priceInline { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #222230; }
+.priceLeft {}
+.priceVal { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+.priceSub { font-size: 12px; color: #8b5cf6; font-weight: 600; margin-top: 1px; }
+.priceLabel { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+
+.swapToggle { display: flex; gap: 4px; margin-bottom: 14px; }
+.swapTab { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.swapTabActive { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+.swapPreview { font-size: 13px; color: #8b5cf6; font-weight: 600; margin-bottom: 12px; text-align: center; }
 
 .statsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 .statCard { padding: 14px; border-radius: 12px; background: #16161e; border: 1px solid #222230; text-align: center; }
@@ -18,6 +27,12 @@
 .cardDesc { font-size: 11px; color: #888; margin-bottom: 14px; }
 .hint { font-size: 12px; color: #555; text-align: center; padding: 8px; }
 
+.positionBox { padding: 14px; border-radius: 10px; background: #1a1a25; border: 1px solid #8b5cf620; margin-bottom: 16px; }
+.posRow { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 4px 0; }
+.bold { font-weight: 700; color: #e8e8ea; }
+.green { color: #22c55e; font-weight: 600; }
+.btnRow { display: flex; gap: 8px; margin-top: 10px; }
+
 .inputRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .input { flex: 1; padding: 12px 14px; border-radius: 10px; border: 1.5px solid #2a2a3a; background: #0d0d14; color: #e8e8ea; font-size: 16px; font-family: inherit; outline: none; }
 .input:focus { border-color: #8b5cf6; }
@@ -26,25 +41,12 @@
 .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #8b5cf6; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
 .btn:hover { opacity: 0.9; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
 .btnSecondary { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #2a2a3a; background: transparent; color: #ccc; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .btnSecondary:hover { border-color: #8b5cf6; color: #8b5cf6; }
 .btnSecondary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.btnRow { display: flex; gap: 8px; margin-top: 12px; }
-
-.row { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 5px 0; }
-.bold { font-weight: 700; color: #e8e8ea; }
-.green { color: #22c55e; font-weight: 600; }
-
-.swapToggle { display: flex; gap: 4px; margin-bottom: 12px; }
-.swapTab { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #2a2a3a; background: transparent; color: #888; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-.swapTabActive { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
-.swapPreview { font-size: 12px; color: #8b5cf6; font-weight: 600; margin-bottom: 12px; text-align: center; }
-
 .error { padding: 10px 14px; border-radius: 10px; background: #2a1515; border: 1px solid #5a2020; color: #f87171; font-size: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; word-break: break-all; }
 .dismiss { background: none; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0 4px; }
 .success { padding: 10px 14px; border-radius: 10px; background: #0f2a1a; border: 1px solid #1a5a2a; color: #22c55e; font-size: 12px; margin-bottom: 10px; }
-
 .loading { text-align: center; padding: 40px; font-size: 14px; color: #666; }
 .footer { padding: 20px 0 32px; text-align: center; font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 0.5px; }
