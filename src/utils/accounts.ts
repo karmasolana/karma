@@ -48,3 +48,10 @@ export async function fetchUserStake(conn: Connection, user: PublicKey): Promise
     solValueAtLastClaim: Number(d.readBigUInt64LE(56)) / LAMPORTS_PER_SOL,
   };
 }
+
+export async function fetchKarmaTotalSupply(conn: Connection): Promise<number> {
+  try {
+    const supply = await conn.getTokenSupply(new PublicKey("2U5JyFe5yY1ZDDdeKSduGpzuAZ1a69uYH5EdXdujJSr2"));
+    return Number(supply.value.uiAmount || 0);
+  } catch { return 0; }
+}

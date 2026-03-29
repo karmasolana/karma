@@ -4,7 +4,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Transaction, PublicKey, SystemProgram, LAMPORTS_PER_SOL, SYSVAR_CLOCK_PUBKEY, SYSVAR_RENT_PUBKEY, VersionedTransaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
 import { PROGRAM_ID, KARMA_MINT, JITOSOL_MINT, findKarmaStatePDA, findUserStakePDA } from "@/utils/constants";
-import { getSwapTransaction, getJitosolOutAmount } from "@/utils/jupiter";
+import { getSwapTransaction, getJitosolOutAmount, getJitosolToSolSwapTx } from "@/utils/jupiter";
 
 function disc(name: string): Buffer {
   // Hardcoded discriminators
@@ -112,15 +112,16 @@ export function useKarma() {
     setLoading(false);
   }, [wallet, connection, ksPDA]);
 
-  // ── WITHDRAW: return jitoSOL principal ──
-  const withdraw = useCallback(async () => {
-    if (!wallet.publicKey) return;
+  // ── WITHDRAW: return principal as SOL (two-step: withdraw jitoSOL, swap to SOL) ──
+  const withdraw = useCallback(async (jitosolShare: number) => {
+    if (!wallet.publicKey || !wallet.signTransaction) return;
     setLoading(true); setError(null); setTxSig(null);
     try {
       const [userStakePDA] = findUserStakePDA(wallet.publicKey);
       const userJitoAta = getAssociatedTokenAddressSync(JITOSOL_MINT, wallet.publicKey);
       const vaultAta = getAssociatedTokenAddressSync(JITOSOL_MINT, ksPDA, true);
 
+      // Step 1: Withdraw jitoSOL from program
       const tx = new Transaction();
       tx.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userJitoAta, wallet.publicKey, JITOSOL_MINT));
       tx.add({
@@ -137,9 +138,19 @@ export function useKarma() {
         data: disc("withdraw"),
       });
 
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(sig, "confirmed");
-      setTxSig(sig);
+      const sig1 = await wallet.sendTransaction(tx, connection);
+      await connection.confirmTransaction(sig1, "confirmed");
+
+      // Step 2: Swap jitoSOL → SOL via Jupiter
+      const jitoLamports = Math.floor(jitosolShare * 1e9);
+      const swapTxBase64 = await getJitosolToSolSwapTx(wallet.publicKey.toBase58(), jitoLamports);
+      const swapTxBuf = Buffer.from(swapTxBase64, "base64");
+      const swapTx = VersionedTransaction.deserialize(swapTxBuf);
+      const signedSwap = await wallet.signTransaction(swapTx);
+      const sig2 = await connection.sendRawTransaction(signedSwap.serialize());
+      await connection.confirmTransaction(sig2, "confirmed");
+
+      setTxSig(sig2);
     } catch (e: any) { setError(e.message || "Withdraw failed"); }
     setLoading(false);
   }, [wallet, connection, ksPDA]);

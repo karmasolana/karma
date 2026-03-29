@@ -34,3 +34,19 @@ export async function getJitosolOutAmount(solLamports: number): Promise<number> 
   const data = await res.json();
   return Number(data.otherAmountThreshold || data.outAmount);
 }
+
+export async function getJitosolToSolSwapTx(userPubkey: string, jitosolLamports: number): Promise<string> {
+  const quoteRes = await fetch(`${JUP_API}/quote?inputMint=${JITOSOL_MINT}&outputMint=${SOL_MINT}&amount=${jitosolLamports}&slippageBps=100`);
+  const quote = await quoteRes.json();
+  const swapRes = await fetch(`${JUP_API}/swap`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      quoteResponse: quote,
+      userPublicKey: userPubkey,
+      wrapAndUnwrapSol: true,
+    }),
+  });
+  const swap = await swapRes.json();
+  return swap.swapTransaction;
+}
