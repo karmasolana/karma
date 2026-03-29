@@ -6,28 +6,24 @@
 
 .panel { padding: 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
 
-/* Price display */
 .priceRow { display: flex; align-items: baseline; gap: 6px; margin-bottom: 16px; }
 .priceBig { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-.priceSlash { font-size: 20px; color: #444; font-weight: 300; }
-.priceToken { font-size: 20px; font-weight: 700; color: #8b5cf6; }
+.priceSlash { font-size: 24px; color: #444; font-weight: 300; }
 
-/* Swap */
 .swapToggle { display: flex; gap: 4px; margin-bottom: 14px; }
 .swapTab { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s; }
 .swapTabActive { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
-.swapPreview { font-size: 13px; color: #8b5cf6; font-weight: 600; margin-bottom: 12px; text-align: center; }
+.swapPreview { font-size: 16px; color: #8b5cf6; font-weight: 700; margin-bottom: 12px; text-align: center; }
 
 .desc { font-size: 12px; color: #888; margin-bottom: 14px; }
 .hint { font-size: 12px; color: #555; text-align: center; padding: 8px; }
+.estimate { font-size: 12px; color: #8b5cf6; font-weight: 600; margin: -6px 0 12px; text-align: center; }
 
-/* Inputs */
 .inputRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .input { flex: 1; padding: 12px 14px; border-radius: 10px; border: 1.5px solid #2a2a3a; background: #0d0d14; color: #e8e8ea; font-size: 16px; font-family: inherit; outline: none; }
 .input:focus { border-color: #8b5cf6; }
 .inputUnit { font-size: 13px; font-weight: 700; color: #888; min-width: 50px; }
 
-/* Buttons */
 .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #8b5cf6; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
 .btn:hover { opacity: 0.9; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -36,7 +32,6 @@
 .btnSecondary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btnRow { display: flex; gap: 8px; margin-top: 10px; }
 
-/* Subsections */
 .subsection { margin-top: 16px; padding-top: 14px; border-top: 1px solid #222230; }
 .posRow { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 4px 0; }
 .bold { font-weight: 700; color: #e8e8ea; }
@@ -44,7 +39,6 @@
 .divider { height: 1px; background: #222230; margin: 10px 0; }
 .subLabel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #555; margin-bottom: 6px; }
 
-/* Feedback */
 .error { padding: 10px 14px; border-radius: 10px; background: #2a1515; border: 1px solid #5a2020; color: #f87171; font-size: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; word-break: break-all; }
 .dismiss { background: none; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0 4px; }
 .success { padding: 10px 14px; border-radius: 10px; background: #0f2a1a; border: 1px solid #1a5a2a; color: #22c55e; font-size: 12px; margin-bottom: 10px; }

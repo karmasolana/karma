@@ -55,3 +55,17 @@ export async function fetchKarmaTotalSupply(conn: Connection): Promise<number> {
     return Number(supply.value.uiAmount || 0);
   } catch { return 0; }
 }
+
+export async function fetchKarmaHolders(conn: Connection): Promise<number> {
+  try {
+    const accounts = await conn.getProgramAccounts(
+      new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      { filters: [{ dataSize: 165 }, { memcmp: { offset: 0, bytes: "2U5JyFe5yY1ZDDdeKSduGpzuAZ1a69uYH5EdXdujJSr2" } }] }
+    );
+    return accounts.filter(a => {
+      const data = Buffer.from(a.account.data);
+      const amount = Number(data.readBigUInt64LE(64));
+      return amount > 0;
+    }).length;
+  } catch { return 0; }
+}
