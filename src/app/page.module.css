@@ -4,25 +4,47 @@
 .logoText { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
 .walletBtn { font-size: 12px !important; height: 34px !important; padding: 0 16px !important; border-radius: 17px !important; background: #8b5cf6 !important; }
 
-.hero { text-align: center; padding: 32px 0 24px; }
+.hero { text-align: center; padding: 24px 0 20px; }
 .priceLabel { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 4px; }
-.price { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
-.priceSub { font-size: 14px; color: #8b5cf6; font-weight: 600; margin-top: 2px; }
+.price { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
 
-.statsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-.statCard { padding: 16px; border-radius: 12px; background: #16161e; border: 1px solid #222230; text-align: center; }
-.statVal { font-size: 20px; font-weight: 700; }
+.statsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.statCard { padding: 14px; border-radius: 12px; background: #16161e; border: 1px solid #222230; text-align: center; }
+.statVal { font-size: 18px; font-weight: 700; }
 .statLabel { font-size: 10px; color: #888; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-.userCard { padding: 16px; border-radius: 12px; background: #16161e; border: 1px solid #8b5cf640; margin-bottom: 16px; }
-.userTitle { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #8b5cf6; margin-bottom: 10px; }
-.userRow { display: flex; justify-content: space-between; font-size: 13px; color: #ccc; padding: 4px 0; }
+.card { padding: 18px; border-radius: 12px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
+.cardTitle { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.cardDesc { font-size: 11px; color: #888; margin-bottom: 14px; }
+.hint { font-size: 12px; color: #555; text-align: center; padding: 8px; }
 
-.actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
-.actionCard { padding: 20px; border-radius: 12px; background: #16161e; border: 1px solid #222230; }
-.actionTitle { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-.actionDesc { font-size: 12px; color: #888; margin-bottom: 10px; }
-.comingSoon { font-size: 11px; color: #555; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.inputRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.input { flex: 1; padding: 12px 14px; border-radius: 10px; border: 1.5px solid #2a2a3a; background: #0d0d14; color: #e8e8ea; font-size: 16px; font-family: inherit; outline: none; }
+.input:focus { border-color: #8b5cf6; }
+.inputUnit { font-size: 13px; font-weight: 700; color: #888; min-width: 50px; }
+
+.btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #8b5cf6; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+.btn:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btnSecondary { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #2a2a3a; background: transparent; color: #ccc; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btnSecondary:hover { border-color: #8b5cf6; color: #8b5cf6; }
+.btnSecondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btnRow { display: flex; gap: 8px; margin-top: 12px; }
+
+.row { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 5px 0; }
+.bold { font-weight: 700; color: #e8e8ea; }
+.green { color: #22c55e; font-weight: 600; }
+
+.swapToggle { display: flex; gap: 4px; margin-bottom: 12px; }
+.swapTab { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #2a2a3a; background: transparent; color: #888; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.swapTabActive { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+.swapPreview { font-size: 12px; color: #8b5cf6; font-weight: 600; margin-bottom: 12px; text-align: center; }
+
+.error { padding: 10px 14px; border-radius: 10px; background: #2a1515; border: 1px solid #5a2020; color: #f87171; font-size: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; word-break: break-all; }
+.dismiss { background: none; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0 4px; }
+.success { padding: 10px 14px; border-radius: 10px; background: #0f2a1a; border: 1px solid #1a5a2a; color: #22c55e; font-size: 12px; margin-bottom: 10px; }
 
 .loading { text-align: center; padding: 40px; font-size: 14px; color: #666; }
 .footer { padding: 20px 0 32px; text-align: center; font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 0.5px; }
