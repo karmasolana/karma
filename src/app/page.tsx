@@ -159,11 +159,29 @@ export default function HomePage() {
               </div>
               {!wallet.connected ? <div className={styles.hint}>Connect wallet to swap</div> : (
                 <>
-                  <div className={styles.inputRow}>
-                    <input type="number" value={swapAmt} onChange={e => setSwapAmt(e.target.value)} min="0.001" step="0.01" className={styles.input} />
-                    <span className={styles.inputUnit}>{swapDir === "buy" ? "SOL" : "KARMA"}</span>
+                  <div className={styles.swapLabel}>{swapDir === "buy" ? "You pay" : "You sell"}</div>
+                  <div className={styles.swapBox}>
+                    <input type="number" value={swapAmt} onChange={e => setSwapAmt(e.target.value)} min="0.001" step="0.01" className={styles.swapInput} />
+                    <span className={styles.swapBadge}>{swapDir === "buy" ? "SOL" : "KARMA"}</span>
                   </div>
-                  {swapOut > 0 && <div className={styles.swapPreview}>→ {swapOut.toFixed(6)} {swapDir === "buy" ? "KARMA" : "SOL"}</div>}
+                  <div className={styles.swapArrow}>⇅</div>
+                  <div className={styles.swapLabel}>You receive</div>
+                  <div className={`${styles.swapBox} ${styles.swapBoxOut}`}>
+                    <span className={styles.swapOutAmt}>{swapOut > 0 ? swapOut.toFixed(6) : "0.000000"}</span>
+                    <span className={`${styles.swapBadge} ${styles.swapBadgeOut}`}>{swapDir === "buy" ? "KARMA" : "SOL"}</span>
+                  </div>
+                  {swapOut > 0 && state && (
+                    <div className={styles.swapRate}>
+                      1 KARMA = {karmaPrice.toFixed(4)} SOL
+                      {(() => {
+                        const priceAfter = swapDir === "buy"
+                          ? (state.lpSol + swapIn) / (state.lpKarma - swapOut)
+                          : (state.lpSol - swapOut) / (state.lpKarma + swapIn);
+                        const impact = ((priceAfter - karmaPrice) / karmaPrice * 100);
+                        return <span className={impact > 0 ? styles.impactUp : styles.impactDown}> · Impact: {impact > 0 ? "+" : ""}{impact.toFixed(2)}%</span>;
+                      })()}
+                    </div>
+                  )}
                   <button className={styles.btn} onClick={() => swapDir === "buy" ? swapBuy(swapIn) : swapSell(swapIn)} disabled={anyLoading || swapIn <= 0}>
                     {anyLoading ? "Processing..." : swapDir === "buy" ? "Buy KARMA" : "Sell KARMA"}
                   </button>
