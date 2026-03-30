@@ -80,10 +80,15 @@ export function useKarma() {
         data: Buffer.concat([disc("deposit"), solBuf, jitBuf]),
       });
 
-      const sig = await wallet.sendTransaction(depositTx, connection);
+      const sig = await wallet.sendTransaction(depositTx, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig, "confirmed");
       setTxSig(sig);
-    } catch (e: any) { setError(e.message || "Deposit failed"); }
+    } catch (e: any) {
+      const msg = e?.message || "Deposit failed";
+      // Check if swap succeeded but deposit failed
+      if (msg.includes("User rejected")) { setError("Transaction cancelled"); }
+      else { setError(`Deposit step failed: ${msg.slice(0, 200)}`); }
+    }
     setLoading(false);
   }, [wallet, connection, ksPDA]);
 
