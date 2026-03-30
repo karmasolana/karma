@@ -1,16 +1,31 @@
 .wrap { padding: 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
 .empty { text-align: center; font-size: 12px; color: #444; padding: 12px; }
-.entry { padding: 12px; border-radius: 8px; background: #1a1a25; margin-bottom: 8px; }
-.entry:last-child { margin-bottom: 0; }
-.date { font-size: 10px; font-weight: 700; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-.text { font-size: 13px; color: #ccc; line-height: 1.5; }
-.adminArea { margin-bottom: 12px; }
+.adminArea { margin-bottom: 14px; }
 .newPostBtn { width: 100%; padding: 10px; border-radius: 8px; border: 1px dashed #8b5cf640; background: transparent; color: #8b5cf6; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: border-color 0.2s; }
 .newPostBtn:hover { border-color: #8b5cf6; }
 .postForm { display: flex; flex-direction: column; gap: 8px; }
+.editLabel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #8b5cf6; margin-bottom: 2px; }
+.titleInput { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid #2a2a3a; background: #0d0d14; color: #e8e8ea; font-size: 14px; font-weight: 700; font-family: inherit; outline: none; }
+.titleInput:focus { border-color: #8b5cf6; }
+.titleInput::placeholder { color: #444; font-weight: 400; }
 .postInput { width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #2a2a3a; background: #0d0d14; color: #e8e8ea; font-size: 13px; font-family: inherit; outline: none; resize: vertical; line-height: 1.5; }
 .postInput:focus { border-color: #8b5cf6; }
+.postInput::placeholder { color: #444; }
 .postActions { display: flex; gap: 8px; }
 .postBtn { flex: 1; padding: 10px; border-radius: 8px; border: none; background: #8b5cf6; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .postBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 .cancelBtn { padding: 10px 16px; border-radius: 8px; border: 1px solid #2a2a3a; background: transparent; color: #888; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+.entry { padding: 14px; border-radius: 10px; background: #1a1a25; margin-bottom: 10px; }
+.entry:last-child { margin-bottom: 0; }
+.entryHeader { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.entryTitle { font-size: 15px; font-weight: 700; color: #e8e8ea; margin-bottom: 2px; }
+.date { font-size: 10px; font-weight: 600; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.5px; }
+.editBtn { padding: 3px 10px; border-radius: 5px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.editBtn:hover { border-color: #8b5cf6; color: #8b5cf6; }
+.text { font-size: 13px; color: #bbb; line-height: 1.6; white-space: pre-wrap; }
+.reactions { display: flex; gap: 6px; margin-top: 10px; }
+.reactBtn { padding: 4px 10px; border-radius: 14px; border: 1px solid #2a2a3a; background: transparent; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #666; transition: all 0.15s; }
+.reactBtn:hover { border-color: #8b5cf640; }
+.reactBtn span { font-size: 11px; font-weight: 700; }
+.reactActive { border-color: #8b5cf6; background: #8b5cf610; color: #8b5cf6; }

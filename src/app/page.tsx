@@ -171,12 +171,6 @@ export default function HomePage() {
           {/* ── divider ── */}
           <div className={styles.sectionDivider} />
 
-          {/* ── GRAPH ── */}
-          <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
-
-          {/* ── TRADES ── */}
-          <Trades />
-
           {/* ── TOKENOMICS ── */}
           <div className={styles.panel}>
             <Collapsible title="Karma Tokenomics" defaultOpen={true} accent>
@@ -221,6 +215,12 @@ export default function HomePage() {
               </div>
             </Collapsible>
           </div>
+
+          {/* ── GRAPH ── */}
+          <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
+
+          {/* ── TRADES ── */}
+          <Trades />
 
           {/* ── divider ── */}
           <div className={styles.sectionDivider} />
