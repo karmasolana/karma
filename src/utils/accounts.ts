@@ -1,5 +1,5 @@
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { findKarmaStatePDA, findUserStakePDA } from "./constants";
+import { findKarmaStatePDA, findUserStakePDA, findDeflateStatePDA, findDeflateUserStakePDA, findSupplyStatePDA, findSupplyUserStakePDA } from "./constants";
 
 export interface KarmaState {
   admin: PublicKey;
@@ -68,4 +68,85 @@ export async function fetchKarmaHolders(conn: Connection): Promise<number> {
       return amount > 0;
     }).length;
   } catch { return 0; }
+}
+
+export interface DeflateState {
+  vault: PublicKey;
+  totalSolDeposited: number;
+  totalJitosol: number;
+  totalStakers: number;
+  totalKarmaDeposited: number;
+  totalYieldDonated: number;
+}
+
+export interface DeflateUserStake {
+  user: PublicKey;
+  karmaDeposited: number;
+  jitosolShare: number;
+  solValueAtLastClaim: number;
+}
+
+export async function fetchDeflateState(conn: Connection): Promise<DeflateState | null> {
+  const [pda] = findDeflateStatePDA();
+  const info = await conn.getAccountInfo(pda);
+  if (!info) return null;
+  const d = Buffer.from(info.data);
+  return {
+    vault: new PublicKey(d.subarray(8, 40)),
+    totalSolDeposited: Number(d.readBigUInt64LE(40)) / LAMPORTS_PER_SOL,
+    totalJitosol: Number(d.readBigUInt64LE(48)) / 1e9,
+    totalStakers: Number(d.readBigUInt64LE(56)),
+    totalKarmaDeposited: Number(d.readBigUInt64LE(64)) / 1e9,
+    totalYieldDonated: Number(d.readBigUInt64LE(72)) / LAMPORTS_PER_SOL,
+  };
+}
+
+export async function fetchDeflateUserStake(conn: Connection, user: PublicKey): Promise<DeflateUserStake | null> {
+  const [pda] = findDeflateUserStakePDA(user);
+  const info = await conn.getAccountInfo(pda);
+  if (!info) return null;
+  const d = Buffer.from(info.data);
+  return {
+    user: new PublicKey(d.subarray(8, 40)),
+    karmaDeposited: Number(d.readBigUInt64LE(40)) / 1e9,
+    jitosolShare: Number(d.readBigUInt64LE(48)) / 1e9,
+    solValueAtLastClaim: Number(d.readBigUInt64LE(56)) / LAMPORTS_PER_SOL,
+  };
+}
+
+export interface SupplyState {
+  vault: PublicKey;
+  totalSolDeposited: number;
+  totalJitosol: number;
+  totalStakers: number;
+  totalYieldDonated: number;
+  totalKarmaMinted: number;
+}
+
+export async function fetchSupplyState(conn: Connection): Promise<SupplyState | null> {
+  const [pda] = findSupplyStatePDA();
+  const info = await conn.getAccountInfo(pda);
+  if (!info) return null;
+  const d = Buffer.from(info.data);
+  return {
+    vault: new PublicKey(d.subarray(8, 40)),
+    totalSolDeposited: Number(d.readBigUInt64LE(40)) / LAMPORTS_PER_SOL,
+    totalJitosol: Number(d.readBigUInt64LE(48)) / 1e9,
+    totalStakers: Number(d.readBigUInt64LE(56)),
+    totalYieldDonated: Number(d.readBigUInt64LE(64)) / LAMPORTS_PER_SOL,
+    totalKarmaMinted: Number(d.readBigUInt64LE(72)) / 1e9,
+  };
+}
+
+export async function fetchSupplyUserStake(conn: Connection, user: PublicKey): Promise<DeflateUserStake | null> {
+  const [pda] = findSupplyUserStakePDA(user);
+  const info = await conn.getAccountInfo(pda);
+  if (!info) return null;
+  const d = Buffer.from(info.data);
+  return {
+    user: new PublicKey(d.subarray(8, 40)),
+    karmaDeposited: Number(d.readBigUInt64LE(40)) / 1e9, // reusing interface, this is sol_deposited
+    jitosolShare: Number(d.readBigUInt64LE(48)) / 1e9,
+    solValueAtLastClaim: Number(d.readBigUInt64LE(56)) / LAMPORTS_PER_SOL,
+  };
 }

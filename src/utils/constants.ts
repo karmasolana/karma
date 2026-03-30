@@ -15,3 +15,21 @@ export function findUserStakePDA(user: PublicKey): [PublicKey, number] {
   const [ksPDA] = findKarmaStatePDA();
   return PublicKey.findProgramAddressSync([Buffer.from("user_stake"), user.toBuffer(), ksPDA.toBuffer()], PROGRAM_ID);
 }
+
+export function findDeflateStatePDA(): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync([Buffer.from("deflate_state")], PROGRAM_ID);
+}
+
+export function findDeflateUserStakePDA(user: PublicKey): [PublicKey, number] {
+  const [dsPDA] = findDeflateStatePDA();
+  return PublicKey.findProgramAddressSync([Buffer.from("deflate_stake"), user.toBuffer(), dsPDA.toBuffer()], PROGRAM_ID);
+}
+
+export function findSupplyStatePDA(): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync([Buffer.from("supply_state")], PROGRAM_ID);
+}
+
+export function findSupplyUserStakePDA(user: PublicKey): [PublicKey, number] {
+  const [ssPDA] = findSupplyStatePDA();
+  return PublicKey.findProgramAddressSync([Buffer.from("supply_stake"), user.toBuffer(), ssPDA.toBuffer()], PROGRAM_ID);
+}
