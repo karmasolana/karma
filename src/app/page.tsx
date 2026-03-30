@@ -146,6 +146,7 @@ export default function HomePage() {
                   <button className={styles.btn} onClick={() => deposit(stakeIn)} disabled={loading || stakeIn <= 0}>
                     {loading ? "Processing..." : `Stake ${stakeAmt} SOL`}
                   </button>
+                  <div className={styles.rentNote}>A small rent fee (~0.00145 SOL) is collected to create your stake account. This is fully returned when you withdraw.</div>
                 </>
               )}
               {wallet.connected && userStake && (
