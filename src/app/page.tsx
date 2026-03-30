@@ -347,13 +347,16 @@ export default function HomePage() {
                   {(() => {
                     const lpK = state.lpKarma;
                     const stakedK = deflateState ? deflateState.totalKarmaDeposited : 0;
-                    const holdersK = Math.max(0, totalSupply - lpK - stakedK);
-                    const lpPct = totalSupply > 0 ? (lpK / totalSupply * 100) : 0;
+                    // Staked KARMA was sold into LP, so it's already counted in lpK
+                    // Holders = total supply - LP karma (which includes staked)
+                    const holdersK = Math.max(0, totalSupply - lpK);
+                    const lpOnlyK = Math.max(0, lpK - stakedK); // LP minus staked portion
+                    const lpPct = totalSupply > 0 ? (lpOnlyK / totalSupply * 100) : 0;
                     const holdersPct = totalSupply > 0 ? (holdersK / totalSupply * 100) : 0;
                     const stakedPct = totalSupply > 0 ? (stakedK / totalSupply * 100) : 0;
                     return (<>
                       <div className={styles.posRow}><span>In holder wallets</span><span>{holdersK.toFixed(4)} KARMA <span className={styles.pct}>({holdersPct.toFixed(1)}%)</span></span></div>
-                      <div className={styles.posRow}><span>In liquidity pool</span><span>{lpK.toFixed(4)} KARMA <span className={styles.pct}>({lpPct.toFixed(1)}%)</span></span></div>
+                      <div className={styles.posRow}><span>In liquidity pool</span><span>{lpOnlyK.toFixed(4)} KARMA <span className={styles.pct}>({lpPct.toFixed(1)}%)</span></span></div>
                       <div className={styles.posRow}><span>Karma staked</span><span>{stakedK.toFixed(4)} KARMA <span className={styles.pct}>({stakedPct.toFixed(1)}%)</span></span></div>
                       {totalSupply > 0 && (
                         <div className={styles.bar}>
