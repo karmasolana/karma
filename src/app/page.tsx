@@ -59,6 +59,8 @@ export default function HomePage() {
   const karmaPrice = state && state.lpKarma > 0 ? state.lpSol / state.lpKarma : 1;
   const currentSolValue = userStake ? userStake.jitosolShare * jitoRate : 0;
   const claimable = userStake ? Math.max(0, currentSolValue - userStake.solValueAtLastClaim) : 0;
+  // Convert claimable SOL yield to KARMA at current LP rate
+  const claimableKarma = karmaPrice > 0 ? claimable / karmaPrice : claimable;
 
   const fmt = (solVal: number, decimals = 4): string => {
     if (currency === "USDC" && solPrice) return `$${(solVal * solPrice).toFixed(decimals)}`;
@@ -163,7 +165,7 @@ export default function HomePage() {
                 <div className={styles.subsection}>
                   <Collapsible title="Your Stake" defaultOpen={true}>
                     <div className={styles.posRow}><span>SOL deposited</span><span className={styles.bold}>{fmt(userStake.solDeposited)}</span></div>
-                    <div className={styles.posRow}><span>Claimable yield</span><span className={styles.green}>{claimable.toFixed(6)} KARMA</span></div>
+                    <div className={styles.posRow}><span>Claimable yield</span><span className={styles.green}>{claimableKarma.toFixed(6)} KARMA</span></div>
                     <div className={styles.btnRow}>
                       <button className={styles.btn} onClick={() => claimYield(currentSolValue)} disabled={loading || claimable <= 0}>Claim KARMA</button>
                       <button className={styles.btnSecondary} onClick={() => withdraw(userStake.jitosolShare)} disabled={loading}>Withdraw SOL</button>

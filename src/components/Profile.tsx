@@ -40,6 +40,8 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
   const weeklyKarma = stakedSol > 0 && karmaPrice > 0 ? (stakedSol * APY / 52) / karmaPrice : 0;
   const pnlPct = karmaPrice > 0 ? ((karmaPrice - 1) / 1) * 100 : 0;
 
+    const claimableKarma = karmaPrice > 0 ? claimable / karmaPrice : claimable;
+
   return (
     <div className={styles.wrap}>
       <Collapsible title="Profile" defaultOpen={true} accent>
@@ -60,7 +62,7 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
                 <div className={styles.row}><span>APY</span><span>{(APY * 100).toFixed(1)}%</span></div>
                 <div className={styles.divider} />
                 <div className={styles.row}><span>SOL Staked</span><span className={styles.bold}>{stakedSol.toFixed(4)} SOL</span></div>
-                <div className={styles.row}><span>Claimable</span><span className={styles.green}>{claimable.toFixed(6)} KARMA</span></div>
+                <div className={styles.row}><span>Claimable</span><span className={styles.green}>{claimableKarma.toFixed(6)} KARMA</span></div>
                 <button className={styles.claimBtn} onClick={() => claimYield(currentSolValue)} disabled={loading || claimable <= 0}>
                   {loading ? "..." : "Claim KARMA"}
                 </button>
