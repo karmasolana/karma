@@ -134,7 +134,7 @@ export function useKarma() {
         data: Buffer.concat([disc("claim_yield"), valueBuf]),
       });
 
-      const sig = await wallet.sendTransaction(tx, connection);
+      const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig, "confirmed");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Claim failed"); }
@@ -217,8 +217,8 @@ export function useKarma() {
         data: Buffer.concat([disc("swap_sol_to_karma"), solBuf]),
       });
 
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(sig, "confirmed");
+      const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
+      await confirmAndVerify(connection, sig, "KARMA buy");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Swap failed"); }
     setLoading(false);
@@ -248,8 +248,8 @@ export function useKarma() {
         data: Buffer.concat([disc("swap_karma_to_sol"), karmaBuf]),
       });
 
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(sig, "confirmed");
+      const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
+      await confirmAndVerify(connection, sig, "KARMA sell");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Swap failed"); }
     setLoading(false);
@@ -375,7 +375,7 @@ export function useDeflatePool() {
         ],
         data: Buffer.concat([disc("deflate_claim"), valueBuf]),
       });
-      const sig = await wallet.sendTransaction(tx, connection);
+      const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig, "confirmed");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Deflate claim failed"); }
@@ -554,7 +554,7 @@ export function useSupplyPool() {
         ],
         data: Buffer.concat([disc("supply_claim"), valueBuf]),
       });
-      const sig = await wallet.sendTransaction(tx, connection);
+      const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig, "confirmed");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Supply claim failed"); }
