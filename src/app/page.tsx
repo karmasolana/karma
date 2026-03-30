@@ -223,7 +223,7 @@ export default function HomePage() {
                     <div className={styles.posRow}><span>Claimable yield</span><span className={styles.green}>{claimableKarma < 0.000001 ? "<0.000001" : claimableKarma.toFixed(6)} KARMA</span></div>
                     <div className={styles.btnRow}>
                       <button className={styles.btn} onClick={() => claimYield(currentSolValue)} disabled={anyLoading || claimable <= 0}>Claim KARMA</button>
-                      <button className={styles.btnSecondary} onClick={() => withdraw(userStake.jitosolShare)} disabled={anyLoading}>Withdraw SOL</button>
+                      <button className={styles.btnSecondary} onClick={() => withdraw(userStake.jitosolShare, currentSolValue)} disabled={anyLoading}>Withdraw SOL</button>
                     </div>
                   </Collapsible>
                 </div>
@@ -253,7 +253,7 @@ export default function HomePage() {
                     <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(supClaimable)}</span></div>
                     <div className={styles.btnRow}>
                       <button className={styles.btn} onClick={() => supplyClaim(supCurrentSolValue)} disabled={anyLoading || supClaimable <= 0}>Donate Yield to LP</button>
-                      <button className={styles.btnSecondary} onClick={() => supplyWithdraw(supplyUserStake.jitosolShare)} disabled={anyLoading}>Withdraw SOL</button>
+                      <button className={styles.btnSecondary} onClick={() => supplyWithdraw(supplyUserStake.jitosolShare, supCurrentSolValue)} disabled={anyLoading}>Withdraw SOL</button>
                     </div>
                   </Collapsible>
                 </div>
@@ -283,7 +283,7 @@ export default function HomePage() {
                     <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(defClaimable)}</span></div>
                     <div className={styles.btnRow}>
                       <button className={styles.btn} onClick={() => deflateClaim(defCurrentSolValue)} disabled={anyLoading || defClaimable <= 0}>Donate Yield to LP</button>
-                      <button className={styles.btnSecondary} onClick={() => deflateWithdraw(deflateUserStake.jitosolShare, deflateUserStake.karmaDeposited)} disabled={anyLoading}>Withdraw KARMA</button>
+                      <button className={styles.btnSecondary} onClick={() => deflateWithdraw(deflateUserStake.jitosolShare, deflateUserStake.karmaDeposited, defCurrentSolValue)} disabled={anyLoading}>Withdraw KARMA</button>
                     </div>
                   </Collapsible>
                 </div>

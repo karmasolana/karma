@@ -133,18 +133,23 @@ export function useKarma() {
     setLoading(false);
   }, [wallet, connection, ksPDA]);
 
-  // ── WITHDRAW: return principal as SOL (two-step: withdraw jitoSOL, swap to SOL) ──
-  const withdraw = useCallback(async (jitosolShare: number) => {
+  // ── WITHDRAW: auto-claims yield, then returns jitoSOL → SOL ──
+  const withdraw = useCallback(async (jitosolShare: number, currentSolValue: number) => {
     if (!wallet.publicKey || !wallet.signTransaction) return;
     setLoading(true); setError(null); setTxSig(null);
     try {
       const [userStakePDA] = findUserStakePDA(wallet.publicKey);
       const userJitoAta = getAssociatedTokenAddressSync(JITOSOL_MINT, wallet.publicKey);
       const vaultAta = getAssociatedTokenAddressSync(JITOSOL_MINT, ksPDA, true);
+      const userKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, wallet.publicKey);
 
-      // Step 1: Withdraw jitoSOL from program
+      const valueBuf = Buffer.alloc(8);
+      valueBuf.writeBigUInt64LE(BigInt(Math.floor(currentSolValue * LAMPORTS_PER_SOL)));
+
+      // Step 1: Withdraw jitoSOL (auto-claims yield first)
       const tx = new Transaction();
       tx.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userJitoAta, wallet.publicKey, JITOSOL_MINT));
+      tx.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userKarmaAta, wallet.publicKey, KARMA_MINT));
       tx.add({
         programId: PROGRAM_ID,
         keys: [
@@ -153,20 +158,22 @@ export function useKarma() {
           { pubkey: userStakePDA, isSigner: false, isWritable: true },
           { pubkey: vaultAta, isSigner: false, isWritable: true },
           { pubkey: userJitoAta, isSigner: false, isWritable: true },
+          { pubkey: KARMA_MINT, isSigner: false, isWritable: true },
+          { pubkey: userKarmaAta, isSigner: false, isWritable: true },
           { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false },
         ],
-        data: disc("withdraw"),
+        data: Buffer.concat([disc("withdraw"), valueBuf]),
       });
 
-      const sig1 = await wallet.sendTransaction(tx, connection);
+      const sig1 = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig1, "confirmed");
 
       // Step 2: Swap jitoSOL → SOL via Jupiter
       const jitoLamports = Math.floor(jitosolShare * 1e9);
       const swapTxBase64 = await getJitosolToSolSwapTx(wallet.publicKey.toBase58(), jitoLamports);
-      const swapTxBuf = Buffer.from(swapTxBase64, "base64");
-      const swapTx = VersionedTransaction.deserialize(swapTxBuf);
+      const swapTx = VersionedTransaction.deserialize(Buffer.from(swapTxBase64, "base64"));
       const signedSwap = await wallet.signTransaction(swapTx);
       const sig2 = await connection.sendRawTransaction(signedSwap.serialize());
       await connection.confirmTransaction(sig2, "confirmed");
@@ -369,8 +376,8 @@ export function useDeflatePool() {
     setLoading(false);
   }, [wallet, connection, ksPDA, dsPDA]);
 
-  // Deflate Withdraw: jitoSOL → SOL (Jupiter) → buy KARMA from LP → return to user
-  const deflateWithdraw = useCallback(async (jitosolShare: number, karmaDeposited: number) => {
+  // Deflate Withdraw: auto-claims yield, jitoSOL → SOL (Jupiter) → buy KARMA from LP
+  const deflateWithdraw = useCallback(async (jitosolShare: number, karmaDeposited: number, currentSolValue: number) => {
     if (!wallet.publicKey || !wallet.signTransaction) return;
     setLoading(true); setError(null); setTxSig(null);
     try {
@@ -378,22 +385,26 @@ export function useDeflatePool() {
       const userJitoAta = getAssociatedTokenAddressSync(JITOSOL_MINT, wallet.publicKey);
       const deflateVault = getAssociatedTokenAddressSync(JITOSOL_MINT, dsPDA, true);
 
-      // Step 1: Withdraw jitoSOL from deflate vault
+      const valueBuf = Buffer.alloc(8);
+      valueBuf.writeBigUInt64LE(BigInt(Math.floor(currentSolValue * LAMPORTS_PER_SOL)));
+
+      // Step 1: Withdraw jitoSOL (auto-claims yield to LP)
       const tx1 = new Transaction();
       tx1.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userJitoAta, wallet.publicKey, JITOSOL_MINT));
       tx1.add({
         programId: PROGRAM_ID,
         keys: [
           { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-          { pubkey: ksPDA, isSigner: false, isWritable: false },
+          { pubkey: ksPDA, isSigner: false, isWritable: true },
           { pubkey: dsPDA, isSigner: false, isWritable: true },
           { pubkey: duPDA, isSigner: false, isWritable: true },
           { pubkey: deflateVault, isSigner: false, isWritable: true },
           { pubkey: userJitoAta, isSigner: false, isWritable: true },
           { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false },
         ],
-        data: disc("deflate_withdraw"),
+        data: Buffer.concat([disc("deflate_withdraw"), valueBuf]),
       });
       const sig1 = await wallet.sendTransaction(tx1, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig1, "confirmed");
@@ -536,31 +547,38 @@ export function useSupplyPool() {
     setLoading(false);
   }, [wallet, connection, ksPDA, ssPDA]);
 
-  // Supply Withdraw: jitoSOL → SOL (Jupiter)
-  const supplyWithdraw = useCallback(async (jitosolShare: number) => {
+  // Supply Withdraw: auto-claims yield, jitoSOL → SOL (Jupiter)
+  const supplyWithdraw = useCallback(async (jitosolShare: number, currentSolValue: number) => {
     if (!wallet.publicKey || !wallet.signTransaction) return;
     setLoading(true); setError(null); setTxSig(null);
     try {
       const [suPDA] = findSupplyUserStakePDA(wallet.publicKey);
       const userJitoAta = getAssociatedTokenAddressSync(JITOSOL_MINT, wallet.publicKey);
       const supplyVault = getAssociatedTokenAddressSync(JITOSOL_MINT, ssPDA, true);
+      const lpKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, ksPDA, true);
 
-      // Step 1: Withdraw jitoSOL
+      const valueBuf = Buffer.alloc(8);
+      valueBuf.writeBigUInt64LE(BigInt(Math.floor(currentSolValue * LAMPORTS_PER_SOL)));
+
+      // Step 1: Withdraw jitoSOL (auto-claims yield to LP)
       const tx1 = new Transaction();
       tx1.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userJitoAta, wallet.publicKey, JITOSOL_MINT));
       tx1.add({
         programId: PROGRAM_ID,
         keys: [
           { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-          { pubkey: ksPDA, isSigner: false, isWritable: false },
+          { pubkey: ksPDA, isSigner: false, isWritable: true },
           { pubkey: ssPDA, isSigner: false, isWritable: true },
           { pubkey: suPDA, isSigner: false, isWritable: true },
           { pubkey: supplyVault, isSigner: false, isWritable: true },
           { pubkey: userJitoAta, isSigner: false, isWritable: true },
+          { pubkey: KARMA_MINT, isSigner: false, isWritable: true },
+          { pubkey: lpKarmaAta, isSigner: false, isWritable: true },
           { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false },
         ],
-        data: disc("supply_withdraw"),
+        data: Buffer.concat([disc("supply_withdraw"), valueBuf]),
       });
       const sig1 = await wallet.sendTransaction(tx1, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig1, "confirmed");
