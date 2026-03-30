@@ -8,7 +8,7 @@ import styles from "./Trades.module.css";
 
 interface Trade {
   sig: string;
-  type: "LP Seed" | "Buy" | "Sell";
+  type: "LP Seed" | "Buy" | "Sell" | "Stake" | "Unstake";
   solAmount: number;
   karmaAmount: number;
   priceAfter: number;
@@ -52,6 +52,19 @@ export default function Trades() {
             const joined = logs.join("\n");
             if (joined.includes("CreateAccount")) continue;
             const priceBefore = lpKarma > 0 ? lpSol / lpKarma : 1;
+
+            if (joined.includes("CreateAccount")) {
+              // New stake opened
+              const rentPaid = Math.abs(solDelta);
+              entries.push({ sig: s.signature, type: "Stake", solAmount: rentPaid, karmaAmount: 0, priceAfter: priceBefore, priceImpact: 0, wallet: signer, timestamp: s.blockTime || 0 });
+              continue;
+            }
+
+            // Check for unstake (CloseAccount in logs = position closed)
+            if (joined.includes("CloseAccount") || (solDelta > 0.001 && joined.includes("Transfer"))) {
+              entries.push({ sig: s.signature, type: "Unstake", solAmount: Math.abs(solDelta), karmaAmount: 0, priceAfter: priceBefore, priceImpact: 0, wallet: signer, timestamp: s.blockTime || 0 });
+              continue;
+            }
 
             if (Math.abs(solDelta) > 0.001) {
               if (solDelta < 0) {
@@ -103,7 +116,7 @@ export default function Trades() {
             {trades.map((t, i) => (
               <div key={i} className={styles.row}>
                 <div className={styles.rowTop}>
-                  <span className={`${styles.badge} ${t.type === "LP Seed" ? styles.badgeSeed : t.type === "Buy" ? styles.badgeBuy : styles.badgeSell}`}>{t.type}</span>
+                  <span className={`${styles.badge} ${t.type === "LP Seed" ? styles.badgeSeed : t.type === "Buy" ? styles.badgeBuy : t.type === "Sell" ? styles.badgeSell : t.type === "Stake" ? styles.badgeStake : styles.badgeUnstake}`}>{t.type}</span>
                   <span className={styles.wallet}>{t.wallet === "Admin" ? "Admin" : `${t.wallet.slice(0, 4)}...${t.wallet.slice(-4)}`}</span>
                   <span className={styles.time}>{formatTime(t.timestamp)}</span>
                 </div>
@@ -111,7 +124,9 @@ export default function Trades() {
                   <div className={styles.amounts}>
                     {t.type === "LP Seed" ? `${t.solAmount} SOL + ${t.karmaAmount} KARMA` :
                      t.type === "Buy" ? `${t.solAmount.toFixed(4)} SOL → ${t.karmaAmount.toFixed(4)} KARMA` :
-                     `${t.karmaAmount.toFixed(4)} KARMA → ${t.solAmount.toFixed(4)} SOL`}
+                     t.type === "Sell" ? `${t.karmaAmount.toFixed(4)} KARMA → ${t.solAmount.toFixed(4)} SOL` :
+                     t.type === "Stake" ? `Opened position` :
+                     `Closed position`}
                   </div>
                   <div className={styles.impact}>
                     <span className={styles.priceVal}>{t.priceAfter.toFixed(4)}</span>

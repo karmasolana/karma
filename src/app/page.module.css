@@ -17,6 +17,10 @@
 
 .panel { padding: 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
 
+.mainTabs { display: flex; gap: 3px; margin-bottom: 16px; background: #0d0d14; border-radius: 10px; padding: 3px; }
+.mainTab { flex: 1; padding: 9px 4px; border-radius: 8px; border: none; background: transparent; color: #666; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; text-transform: uppercase; letter-spacing: 0.3px; transition: all 0.15s; }
+.mainTabActive { background: #8b5cf6; color: #fff; }
+
 .toolbar { display: flex; justify-content: flex-start; gap: 8px; padding: 8px 0 6px; }
 .welcomeChip { position: relative; padding: 6px 12px; border-radius: 8px; background: transparent; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
 .welcomeChipHover { background: #8b5cf620; }
@@ -63,6 +67,13 @@
 .btnSecondary:hover { border-color: #8b5cf6; color: #8b5cf6; }
 .btnSecondary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btnRow { display: flex; gap: 8px; margin-top: 10px; }
+.btnRowHalf { display: flex; gap: 8px; margin-top: 10px; }
+.btnSmall { flex: 1; padding: 10px; border-radius: 8px; border: none; background: #8b5cf6; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+.btnSmall:hover { opacity: 0.9; }
+.btnSmall:disabled { opacity: 0.4; cursor: not-allowed; }
+.btnSecondarySmall { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #2a2a3a; background: transparent; color: #ccc; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btnSecondarySmall:hover { border-color: #8b5cf6; color: #8b5cf6; }
+.btnSecondarySmall:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .subsection { margin-top: 16px; padding-top: 14px; border-top: 1px solid #222230; }
 .posRow { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 4px 0; }
