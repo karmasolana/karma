@@ -17,11 +17,12 @@
 
 .panel { padding: 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
 
-.toolbar { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 0 6px; }
-.welcomeChip { position: relative; padding: 8px 14px; border-radius: 8px; background: #8b5cf620; border: 1px solid #8b5cf630; cursor: pointer; transition: all 0.2s; }
-.welcomeChipHover { background: #8b5cf640; border-color: #8b5cf6; }
-.welcomeChipText { font-size: 11px; font-weight: 700; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.5px; }
-.welcomeTooltip { position: absolute; top: calc(100% + 8px); right: 0; width: 300px; background: #1a1a25; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 16px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.toolbar { display: flex; justify-content: flex-start; gap: 8px; padding: 8px 0 6px; }
+.welcomeChip { position: relative; padding: 6px 12px; border-radius: 8px; background: transparent; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+.welcomeChipHover { background: #8b5cf620; }
+.welcomeIcon { flex-shrink: 0; opacity: 0.7; transition: opacity 0.2s; }
+.welcomeChipHover .welcomeIcon { opacity: 1; }
+.welcomeTooltip { position: absolute; top: calc(100% + 8px); left: 0; width: 300px; background: #1a1a25; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 16px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
 .welcomeTooltipTitle { font-size: 14px; font-weight: 700; color: #e8e8ea; margin-bottom: 6px; }
 .welcomeTooltip p { font-size: 12px; color: #999; line-height: 1.6; margin: 0; }
 
@@ -40,7 +41,8 @@
 .swapBadge { font-size: 13px; font-weight: 700; color: #888; background: #222230; padding: 4px 10px; border-radius: 6px; }
 .swapBadgeOut { color: #8b5cf6; background: #8b5cf615; }
 .swapOutAmt { flex: 1; font-size: 18px; font-weight: 700; color: #8b5cf6; }
-.swapArrow { text-align: center; font-size: 16px; color: #444; margin: 2px 0; }
+.swapArrowBtn { display: block; width: 36px; height: 28px; margin: 2px auto; background: #1a1a25; border: 1px solid #2a2a3a; border-radius: 8px; color: #8b5cf6; font-size: 16px; cursor: pointer; transition: all 0.15s; }
+.swapArrowBtn:hover { background: #8b5cf615; border-color: #8b5cf6; }
 .swapRate { font-size: 10px; color: #555; padding: 2px 2px 10px; }
 .impactUp { color: #22c55e; font-weight: 700; }
 .impactDown { color: #ef4444; font-weight: 700; }

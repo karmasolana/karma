@@ -264,7 +264,10 @@ export function useDeflatePool() {
       const userKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, wallet.publicKey);
       const lpKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, ksPDA, true);
 
-      // Step 1: Sell KARMA for SOL via our LP
+      // Step 1: Record SOL balance before sell
+      const solBefore = await connection.getBalance(wallet.publicKey);
+
+      // Step 2: Sell KARMA for SOL via our LP
       const karmaBuf = Buffer.alloc(8); karmaBuf.writeBigUInt64LE(BigInt(karmaLamports));
       const sellTx = new Transaction().add({
         programId: PROGRAM_ID,
@@ -281,15 +284,15 @@ export function useDeflatePool() {
       const sellSig = await wallet.sendTransaction(sellTx, connection, { skipPreflight: true });
       await connection.confirmTransaction(sellSig, "confirmed");
 
-      // Step 2: Check SOL received, swap to jitoSOL via Jupiter
+      // Step 3: Get exact SOL received from sell (not entire wallet balance)
       await new Promise(r => setTimeout(r, 2000));
       const userJitoAta = getAssociatedTokenAddressSync(JITOSOL_MINT, wallet.publicKey);
       let jitoBefore = BigInt(0);
       try { const b = await connection.getTokenAccountBalance(userJitoAta); jitoBefore = BigInt(b.value.amount); } catch {}
 
-      // Estimate SOL from the sell (approximate)
-      const solBalance = await connection.getBalance(wallet.publicKey);
-      const solForSwap = Math.floor(solBalance * 0.9); // leave some for fees
+      const solAfter = await connection.getBalance(wallet.publicKey);
+      const solReceived = solAfter - solBefore; // net SOL gained (minus tx fees)
+      const solForSwap = Math.max(solReceived - 10000, 0); // leave 10k lamports for fees
       if (solForSwap < 10000) throw new Error("Not enough SOL from KARMA sell");
 
       const swapTxBase64 = await getSwapTransaction(wallet.publicKey.toBase58(), solForSwap);
@@ -391,7 +394,10 @@ export function useDeflatePool() {
       const sig1 = await wallet.sendTransaction(tx1, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig1, "confirmed");
 
-      // Step 2: Swap jitoSOL → SOL via Jupiter
+      // Step 2: Record SOL before Jupiter swap
+      const solBeforeSwap = await connection.getBalance(wallet.publicKey);
+
+      // Swap jitoSOL → SOL via Jupiter
       const jitoLamports = Math.floor(jitosolShare * 1e9);
       const swapTxBase64 = await getJitosolToSolSwapTx(wallet.publicKey.toBase58(), jitoLamports);
       const swapTx = VersionedTransaction.deserialize(Buffer.from(swapTxBase64, "base64"));
@@ -399,14 +405,14 @@ export function useDeflatePool() {
       const swapSig = await connection.sendRawTransaction(signedSwap.serialize());
       await connection.confirmTransaction(swapSig, "confirmed");
 
-      // Step 3: Buy KARMA with SOL from our LP
+      // Step 3: Buy KARMA with only the SOL received from jitoSOL swap
       await new Promise(r => setTimeout(r, 2000));
-      const solBal = await connection.getBalance(wallet.publicKey);
-      // Buy back the original KARMA amount
+      const solAfterSwap = await connection.getBalance(wallet.publicKey);
+      const solReceived = solAfterSwap - solBeforeSwap;
+      const solForBuy = Math.max(solReceived - 10000, 0); // leave fees
+      if (solForBuy < 10000) throw new Error("Not enough SOL to buy KARMA back");
       const userKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, wallet.publicKey);
       const lpKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, ksPDA, true);
-      // Use enough SOL to buy back karmaDeposited amount
-      const solForBuy = Math.floor(solBal * 0.9);
       const solBuf = Buffer.alloc(8); solBuf.writeBigUInt64LE(BigInt(solForBuy));
       const buyTx = new Transaction();
       buyTx.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userKarmaAta, wallet.publicKey, KARMA_MINT));

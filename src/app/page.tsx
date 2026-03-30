@@ -104,6 +104,10 @@ export default function HomePage() {
   const anyError = error || dError || sError;
   const clearErrors = () => { setError(null); dSetError(null); sSetError(null); };
 
+  // Deflate pool: supply reduced = how much KARMA was effectively burned
+  // (SOL donated to LP at market rate → equivalent KARMA that wasn't minted)
+  const deflateSupplyReduced = deflateState && karmaPrice > 0 ? deflateState.totalYieldDonated / karmaPrice : 0;
+
   return (
     <>
       <header className={styles.header}>
@@ -135,7 +139,12 @@ export default function HomePage() {
               onMouseEnter={() => setWelcomeHover(true)}
               onMouseLeave={() => setWelcomeHover(false)}
             >
-              <span className={styles.welcomeChipText}>Welcome to Karma</span>
+              <svg className={styles.welcomeIcon} width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="6" width="18" height="12" rx="2" fill="#8b5cf630" stroke="#8b5cf6" strokeWidth="1.5"/>
+                <line x1="12" y1="18" x2="12" y2="22" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="9" y1="22" x2="15" y2="22" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round"/>
+                <text x="12" y="13.5" textAnchor="middle" fill="#8b5cf6" fontSize="5" fontWeight="700">WELCOME</text>
+              </svg>
               {welcomeHover && (
                 <div className={styles.welcomeTooltip}>
                   <div className={styles.welcomeTooltipTitle}>Welcome to Karma</div>
@@ -147,7 +156,7 @@ export default function HomePage() {
 
           {/* ── SWAP (non-collapsible) ── */}
           <div className={styles.panel}>
-            <Collapsible title="Swap" defaultOpen={true} accent collapsible={false} tooltip="Swap between Sol and Karma using our own Liquidity and AMM for no fees">
+            <Collapsible title="Swap" defaultOpen={true} accent collapsible={false} tooltip="Swap between Sol and Karma for no fees">
               <div className={styles.priceRow}>
                 <span className={styles.priceBig}>{karmaPrice.toFixed(4)} SOL</span>
                 <span className={styles.priceSlash}>/</span>
@@ -164,7 +173,7 @@ export default function HomePage() {
                     <input type="number" value={swapAmt} onChange={e => setSwapAmt(e.target.value)} min="0.001" step="0.01" className={styles.swapInput} />
                     <span className={styles.swapBadge}>{swapDir === "buy" ? "SOL" : "KARMA"}</span>
                   </div>
-                  <div className={styles.swapArrow}>⇅</div>
+                  <button className={styles.swapArrowBtn} onClick={() => setSwapDir(swapDir === "buy" ? "sell" : "buy")}>⇅</button>
                   <div className={styles.swapLabel}>You receive</div>
                   <div className={`${styles.swapBox} ${styles.swapBoxOut}`}>
                     <span className={styles.swapOutAmt}>{swapOut > 0 ? swapOut.toFixed(6) : "0.000000"}</span>
@@ -222,10 +231,9 @@ export default function HomePage() {
             </Collapsible>
           </div>
 
-          {/* ── SUPPLY KARMA (above deflate) ── */}
+          {/* ── SUPPLY KARMA ── */}
           <div className={styles.panel}>
             <Collapsible title="Supply Karma" defaultOpen={true} accent tooltip="Stake SOL to deepen liquidity on both sides of the pool. Yield adds SOL + equal KARMA to LP for better swaps.">
-              <div className={styles.desc}>Stake SOL to deepen liquidity. Yield adds SOL + equal KARMA to LP — better swaps for everyone.</div>
               {!wallet.connected ? <div className={styles.hint}>Connect wallet to supply</div> : (
                 <>
                   <div className={styles.inputRow}>
@@ -256,7 +264,6 @@ export default function HomePage() {
           {/* ── DEFLATE KARMA ── */}
           <div className={styles.panel}>
             <Collapsible title="Deflate Karma" defaultOpen={true} accent tooltip="Stake KARMA to increase its price. Your KARMA is sold for SOL, earns yield, and the yield SOL is donated to the LP — pure price appreciation for all holders.">
-              <div className={styles.desc}>Stake KARMA to increase its price. Yield SOL is added to LP — pure price appreciation for all holders.</div>
               {!wallet.connected ? <div className={styles.hint}>Connect wallet to deflate</div> : (
                 <>
                   <div className={styles.inputRow}>
@@ -306,7 +313,7 @@ export default function HomePage() {
                   <Collapsible title="Deflate Pool" defaultOpen={true}>
                     <div className={styles.posRow}><span>Total KARMA staked</span><span>{deflateState.totalKarmaDeposited.toFixed(4)} KARMA</span></div>
                     <div className={styles.posRow}><span>Stakers</span><span>{deflateState.totalStakers}</span></div>
-                    <div className={styles.posRow}><span>Total yield donated</span><span className={styles.green}>{fmt(deflateState.totalYieldDonated)}</span></div>
+                    <div className={styles.posRow}><span>Supply reduced</span><span className={styles.green}>{deflateSupplyReduced.toFixed(4)} KARMA</span></div>
                   </Collapsible>
                 </div>
               )}
@@ -315,8 +322,7 @@ export default function HomePage() {
                   <Collapsible title="Supply Pool" defaultOpen={true}>
                     <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(supplyState.totalSolDeposited)}</span></div>
                     <div className={styles.posRow}><span>Stakers</span><span>{supplyState.totalStakers}</span></div>
-                    <div className={styles.posRow}><span>Total yield donated</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)}</span></div>
-                    <div className={styles.posRow}><span>KARMA minted to LP</span><span>{supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
+                    <div className={styles.posRow}><span>LP added</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)} + {supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
                   </Collapsible>
                 </div>
               )}
