@@ -3,6 +3,9 @@
 .logoK { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #fff; }
 .logoText { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
 .headerRight { display: flex; align-items: center; gap: 6px; }
+.headerPrice { font-size: 14px; font-weight: 700; color: #e8e8ea; letter-spacing: -0.3px; }
+.headerSlash { color: #444; font-weight: 300; margin: 0 2px; }
+.headerKarma { color: #8b5cf6; }
 .walletBtn { font-size: 12px !important; height: 34px !important; padding: 0 16px !important; border-radius: 17px !important; background: #8b5cf6 !important; }
 
 /* Settings */
@@ -87,9 +90,11 @@
 .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #222230; margin: 10px 0 6px; }
 .barFillHolders { background: #8b5cf6; height: 100%; }
 .barFillLP { background: #3b82f6; height: 100%; }
+.barFillStaked { background: #f59e0b; height: 100%; }
 .legend { display: flex; gap: 14px; font-size: 10px; color: #888; }
 .dotHolders { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6; margin-right: 4px; vertical-align: middle; }
 .dotLP { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; margin-right: 4px; vertical-align: middle; }
+.dotStaked { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; margin-right: 4px; vertical-align: middle; }
 
 .error { padding: 10px 14px; border-radius: 10px; background: #2a1515; border: 1px solid #5a2020; color: #f87171; font-size: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; word-break: break-all; }
 .dismiss { background: none; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0 4px; }

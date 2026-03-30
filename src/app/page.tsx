@@ -116,6 +116,7 @@ export default function HomePage() {
     <>
       <header className={styles.header}>
         <div className={styles.logo}><span className={styles.logoK}>K</span><span className={styles.logoText}>Karma</span></div>
+        {state && <div className={styles.headerPrice}>{karmaPrice.toFixed(4)} SOL<span className={styles.headerSlash}>/</span><span className={styles.headerKarma}>KARMA</span></div>}
         <div className={styles.headerRight}>
           <WalletMultiButton className={styles.walletBtn} />
           <div className={styles.settingsWrap} ref={settingsRef}>
@@ -158,10 +159,10 @@ export default function HomePage() {
           {/* ── MAIN PANEL (Swap + Pool Tabs) ── */}
           <div className={styles.panel}>
             <div className={styles.mainTabs}>
-              <button className={`${styles.mainTab} ${activeTab === "swap" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("swap")}>Swap</button>
-              <button className={`${styles.mainTab} ${activeTab === "mint" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("mint")}>Mint</button>
-              <button className={`${styles.mainTab} ${activeTab === "supply" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("supply")}>Supply</button>
-              <button className={`${styles.mainTab} ${activeTab === "deflate" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("deflate")}>Deflate</button>
+              <button className={`${styles.mainTab} ${activeTab === "swap" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("swap")} title="Swap between Sol and Karma for no fees">Swap</button>
+              <button className={`${styles.mainTab} ${activeTab === "mint" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("mint")} title="Stake Sol to mint Karma rewards, withdraw at any time for no fees">Mint</button>
+              <button className={`${styles.mainTab} ${activeTab === "supply" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("supply")} title="Stake Sol to donate liquidity to Karma">Supply</button>
+              <button className={`${styles.mainTab} ${activeTab === "deflate" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("deflate")} title="Stake Karma to deflate Karma supply">Deflate</button>
             </div>
 
             {/* ── SWAP TAB ── */}
@@ -314,7 +315,7 @@ export default function HomePage() {
                 <Collapsible title="Mint Pool" defaultOpen={true}>
                   <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(state.totalSolDeposited, 2)}</span></div>
                   <div className={styles.posRow}><span>Stakers</span><span>{state.totalStakers}</span></div>
-                  <div className={styles.posRow}><span>Karma minted</span><span>{totalKarmaMinted.toFixed(4)} KARMA</span></div>
+                  <div className={styles.posRow}><span>Karma minted</span><span className={styles.green}>{totalKarmaMinted.toFixed(4)} KARMA</span></div>
                 </Collapsible>
               </div>
               {deflateState && (
@@ -346,17 +347,22 @@ export default function HomePage() {
                   {(() => {
                     const lpK = state.lpKarma;
                     const stakedK = deflateState ? deflateState.totalKarmaDeposited : 0;
-                    const holdersK = Math.max(0, totalSupply - lpK);
+                    const holdersK = Math.max(0, totalSupply - lpK - stakedK);
                     const lpPct = totalSupply > 0 ? (lpK / totalSupply * 100) : 0;
                     const holdersPct = totalSupply > 0 ? (holdersK / totalSupply * 100) : 0;
+                    const stakedPct = totalSupply > 0 ? (stakedK / totalSupply * 100) : 0;
                     return (<>
                       <div className={styles.posRow}><span>In holder wallets</span><span>{holdersK.toFixed(4)} KARMA <span className={styles.pct}>({holdersPct.toFixed(1)}%)</span></span></div>
                       <div className={styles.posRow}><span>In liquidity pool</span><span>{lpK.toFixed(4)} KARMA <span className={styles.pct}>({lpPct.toFixed(1)}%)</span></span></div>
-                      <div className={styles.posRow}><span>Staked in deflation</span><span>{stakedK.toFixed(4)} KARMA</span></div>
+                      <div className={styles.posRow}><span>Karma staked</span><span>{stakedK.toFixed(4)} KARMA <span className={styles.pct}>({stakedPct.toFixed(1)}%)</span></span></div>
                       {totalSupply > 0 && (
-                        <div className={styles.bar}><div className={styles.barFillHolders} style={{ width: `${holdersPct}%` }} /><div className={styles.barFillLP} style={{ width: `${lpPct}%` }} /></div>
+                        <div className={styles.bar}>
+                          <div className={styles.barFillHolders} style={{ width: `${holdersPct}%` }} />
+                          <div className={styles.barFillLP} style={{ width: `${lpPct}%` }} />
+                          <div className={styles.barFillStaked} style={{ width: `${stakedPct}%` }} />
+                        </div>
                       )}
-                      <div className={styles.legend}><span><span className={styles.dotHolders} /> Holders</span><span><span className={styles.dotLP} /> LP</span></div>
+                      <div className={styles.legend}><span><span className={styles.dotHolders} /> Holders</span><span><span className={styles.dotLP} /> LP</span><span><span className={styles.dotStaked} /> Staked</span></div>
                     </>);
                   })()}
                 </Collapsible>
