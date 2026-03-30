@@ -100,11 +100,17 @@ export default function HomePage() {
 
       {pageLoading ? <div className={styles.loading}>Loading...</div> : state ? (
         <>
+          {/* ── PRICE TICKER ── */}
+          <div className={styles.priceTicker}>
+            <span className={styles.tickerPrice}>{karmaPrice.toFixed(4)} SOL / KARMA</span>
+            <span className={styles.tickerPnl}>{karmaPrice >= 1 ? "+" : ""}{((karmaPrice - 1) * 100).toFixed(2)}%</span>
+          </div>
+
           {/* ── WELCOME ── */}
           <div className={styles.welcome}>
             <div className={styles.welcomeTitle}>Welcome to Karma</div>
             <p className={styles.welcomeText}>
-              Karma is a store of value token built on Solana and backed 1:1 by SOL. Karma can be minted, and deflated (burned) by you. Stake SOL to mint — or deflate Karma and withdraw your full deposit at anytime. Or swap SOL for Karma directly with our own liquidity pools.
+              Karma is a store of value token built on Solana and backed 1:1 by SOL. Karma can be minted and deflated by staking Sol. Sol can be withdrawn any time with no additional fees. You can buy and sell Karma using our Swap built with our own Liquidity Pools.
             </p>
           </div>
           <div className={styles.sectionDivider} />
