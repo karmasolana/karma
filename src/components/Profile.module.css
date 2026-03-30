@@ -1,6 +1,9 @@
-.wrap { padding: 16px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
-.address { font-size: 11px; color: #555; font-family: monospace; margin-bottom: 10px; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.stat { padding: 10px 12px; border-radius: 8px; background: #1a1a25; }
-.val { font-size: 16px; font-weight: 700; color: #e8e8ea; }
-.label { font-size: 9px; color: #666; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+.wrap { padding: 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
+.address { font-size: 11px; color: #555; font-family: monospace; margin-bottom: 12px; }
+.row { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 4px 0; }
+.bold { font-weight: 700; color: #e8e8ea; }
+.accent { font-weight: 700; color: #8b5cf6; }
+.green { color: #22c55e; font-weight: 600; }
+.red { color: #ef4444; font-weight: 600; }
+.divider { height: 1px; background: #222230; margin: 8px 0; }
+.sub { margin-top: 14px; padding-top: 12px; border-top: 1px solid #222230; }
