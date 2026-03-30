@@ -33,6 +33,14 @@ export function useKarma() {
     setLoading(true); setError(null); setTxSig(null);
     try {
       const lamports = Math.floor(solAmount * LAMPORTS_PER_SOL);
+      const userJitoAta = getAssociatedTokenAddressSync(JITOSOL_MINT, wallet.publicKey);
+
+      // Check jitoSOL balance before swap
+      let balBefore = BigInt(0);
+      try {
+        const bal = await connection.getTokenAccountBalance(userJitoAta);
+        balBefore = BigInt(bal.value.amount);
+      } catch {} // ATA might not exist yet
 
       // Step 1: Swap SOL → jitoSOL via Jupiter
       const swapTxBase64 = await getSwapTransaction(wallet.publicKey.toBase58(), lamports);
@@ -43,16 +51,18 @@ export function useKarma() {
       const swapSig = await connection.sendRawTransaction(signedSwap.serialize());
       await connection.confirmTransaction(swapSig, "confirmed");
 
-      // Step 2: Get jitoSOL amount received
-      const jitAmount = await getJitosolOutAmount(lamports);
+      // Step 2: Read actual jitoSOL balance after swap
+      await new Promise(r => setTimeout(r, 2000)); // brief delay for state to settle
+      const balAfter = await connection.getTokenAccountBalance(userJitoAta);
+      const jitReceived = BigInt(balAfter.value.amount) - balBefore;
+      if (jitReceived <= BigInt(0)) throw new Error("No jitoSOL received from swap");
 
       // Step 3: Deposit jitoSOL to vault
-      const userJitoAta = getAssociatedTokenAddressSync(JITOSOL_MINT, wallet.publicKey);
       const vaultAta = getAssociatedTokenAddressSync(JITOSOL_MINT, ksPDA, true);
       const [userStakePDA] = findUserStakePDA(wallet.publicKey);
 
       const solBuf = Buffer.alloc(8); solBuf.writeBigUInt64LE(BigInt(lamports));
-      const jitBuf = Buffer.alloc(8); jitBuf.writeBigUInt64LE(BigInt(jitAmount));
+      const jitBuf = Buffer.alloc(8); jitBuf.writeBigUInt64LE(jitReceived);
 
       const depositTx = new Transaction().add({
         programId: PROGRAM_ID,
