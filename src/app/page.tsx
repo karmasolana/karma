@@ -62,14 +62,22 @@ export default function HomePage() {
     }
   }, [connection, wallet.publicKey]);
 
-  useEffect(() => {
-    reload().then(() => setPageLoading(false)).catch(() => setPageLoading(false));
+  const fetchPrices = useCallback(() => {
     getJitosolRate().then(setJitoRate).catch(() => {});
     fetch("https://lite-api.jup.ag/swap/v1/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&amount=1000000000&slippageBps=50")
       .then(r => r.json()).then(d => { if (d.outAmount) setSolPrice(Number(d.outAmount) / 1e6); }).catch(() => {});
-  }, [reload]);
+  }, []);
 
-  useEffect(() => { if (txSig || dTxSig || sTxSig) setTimeout(reload, 2000); }, [txSig, dTxSig, sTxSig, reload]);
+  // Initial load + auto-refresh every 30s
+  useEffect(() => {
+    reload().then(() => setPageLoading(false)).catch(() => setPageLoading(false));
+    fetchPrices();
+    const interval = setInterval(() => { reload(); fetchPrices(); }, 30000);
+    return () => clearInterval(interval);
+  }, [reload, fetchPrices]);
+
+  // Reload after any transaction
+  useEffect(() => { if (txSig || dTxSig || sTxSig) setTimeout(() => { reload(); fetchPrices(); }, 2000); }, [txSig, dTxSig, sTxSig, reload, fetchPrices]);
 
   const karmaPrice = state && state.lpKarma > 0 ? state.lpSol / state.lpKarma : 1;
   const currentSolValue = userStake ? userStake.jitosolShare * jitoRate : 0;
