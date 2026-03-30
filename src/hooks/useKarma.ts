@@ -436,6 +436,9 @@ export function useDeflatePool() {
       const solNeeded = (ksState.lpSol * karmaWant) / (ksState.lpKarma - karmaWant);
       const solForBuy = Math.ceil(solNeeded * LAMPORTS_PER_SOL) + 5000; // tiny buffer for rounding
 
+      // Record SOL before buyback to calculate true leftover
+      const solBeforeBuy = await connection.getBalance(wallet.publicKey);
+
       const solBuf = Buffer.alloc(8); solBuf.writeBigUInt64LE(BigInt(solForBuy));
       const buyTx = new Transaction();
       buyTx.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userKarmaAta, wallet.publicKey, KARMA_MINT));
@@ -453,6 +456,25 @@ export function useDeflatePool() {
       });
       const sig3 = await wallet.sendTransaction(buyTx, connection, { skipPreflight: true });
       await connection.confirmTransaction(sig3, "confirmed");
+
+      // Step 4: Send leftover SOL surplus to admin
+      // Surplus = SOL gained from jitoSOL swap - SOL spent on KARMA buyback - fees
+      await new Promise(r => setTimeout(r, 1500));
+      const solAfterBuy = await connection.getBalance(wallet.publicKey);
+      // The user's SOL before the entire deflate withdraw process was solBeforeSwap
+      // Anything above that (minus some fee buffer) is surplus from jitoSOL appreciation
+      const surplus = solAfterBuy - solBeforeSwap - 15000; // 15k buffer for accumulated fees
+      if (surplus > 10000) {
+        const { ADMIN_WALLET } = await import("@/utils/constants");
+        const adminPk = new PublicKey(ADMIN_WALLET);
+        if (wallet.publicKey.toBase58() !== ADMIN_WALLET) {
+          const sendTx = new Transaction().add(
+            SystemProgram.transfer({ fromPubkey: wallet.publicKey, toPubkey: adminPk, lamports: surplus })
+          );
+          try { await wallet.sendTransaction(sendTx, connection, { skipPreflight: true }); } catch {}
+        }
+      }
+
       setTxSig(sig3);
     } catch (e: any) { setError(e.message || "Deflate withdraw failed"); }
     setLoading(false);
