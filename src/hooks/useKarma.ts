@@ -420,14 +420,22 @@ export function useDeflatePool() {
       const swapSig = await connection.sendRawTransaction(signedSwap.serialize());
       await connection.confirmTransaction(swapSig, "confirmed");
 
-      // Step 3: Buy KARMA with only the SOL received from jitoSOL swap
+      // Step 3: Buy back exactly karmaDeposited KARMA (not all SOL received)
       await new Promise(r => setTimeout(r, 2000));
-      const solAfterSwap = await connection.getBalance(wallet.publicKey);
-      const solReceived = solAfterSwap - solBeforeSwap;
-      const solForBuy = Math.max(solReceived - 10000, 0); // leave fees
-      if (solForBuy < 10000) throw new Error("Not enough SOL to buy KARMA back");
       const userKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, wallet.publicKey);
       const lpKarmaAta = getAssociatedTokenAddressSync(KARMA_MINT, ksPDA, true);
+
+      // Fetch current LP state to calculate exact SOL needed for karmaDeposited
+      const { fetchKarmaState } = await import("@/utils/accounts");
+      const ksState = await fetchKarmaState(connection);
+      if (!ksState) throw new Error("Could not fetch LP state");
+
+      // AMM math: SOL needed to buy K karma = (lp_sol * K) / (lp_karma - K)
+      const karmaWant = karmaDeposited;
+      if (karmaWant >= ksState.lpKarma) throw new Error("Not enough KARMA in LP");
+      const solNeeded = (ksState.lpSol * karmaWant) / (ksState.lpKarma - karmaWant);
+      const solForBuy = Math.ceil(solNeeded * LAMPORTS_PER_SOL) + 5000; // tiny buffer for rounding
+
       const solBuf = Buffer.alloc(8); solBuf.writeBigUInt64LE(BigInt(solForBuy));
       const buyTx = new Transaction();
       buyTx.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userKarmaAta, wallet.publicKey, KARMA_MINT));
