@@ -305,6 +305,25 @@ export default function HomePage() {
               <div className={styles.posRow}><span>KARMA price</span><span className={styles.bold}>{fmt(karmaPrice)}</span></div>
               <div className={styles.posRow}><span>Market cap</span><span className={styles.bold}>{fmt(totalSupply * karmaPrice, 2)}</span></div>
               <div className={styles.posRow}><span>Holders</span><span className={styles.bold}>{holders}</span></div>
+              {(() => {
+                // Mint rate: SOL staked * APY / 365 converted to KARMA at market rate per day
+                const mintSolStaked = state.totalSolDeposited;
+                const mintRateDaily = mintSolStaked > 0 && karmaPrice > 0 ? (mintSolStaked * APY / 365) / karmaPrice : 0;
+                // Deflation rate: SOL equivalent in deflate vault * APY / 365 (SOL added to LP per day)
+                const defSolStaked = deflateState ? deflateState.totalSolDeposited : 0;
+                const defRateDaily = defSolStaked * APY / 365;
+                const defRateKarma = karmaPrice > 0 ? defRateDaily / karmaPrice : 0;
+                // Supply rates: SOL staked in supply * APY / 365
+                const supSolStaked = supplyState ? supplyState.totalSolDeposited : 0;
+                const supSolRate = supSolStaked * APY / 365;
+                const supKarmaRate = karmaPrice > 0 ? supSolRate / karmaPrice : 0;
+                return (<>
+                  <div className={styles.posRow}><span>Karma mint rate</span><span className={styles.green}>+{mintRateDaily.toFixed(6)} / day</span></div>
+                  <div className={styles.posRow}><span>Karma deflation rate</span><span className={styles.green}>+{defRateKarma.toFixed(6)} / day</span></div>
+                  <div className={styles.posRow}><span>SOL liquidity supply rate</span><span className={styles.green}>+{supSolRate.toFixed(6)} / day</span></div>
+                  <div className={styles.posRow}><span>KARMA liquidity supply rate</span><span className={styles.green}>+{supKarmaRate.toFixed(6)} / day</span></div>
+                </>);
+              })()}
               <div className={styles.subsection}><Collapsible title="Mint Pool" defaultOpen={true}>
                 <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(state.totalSolDeposited, 2)}</span></div>
                 <div className={styles.posRow}><span>Stakers</span><span>{state.totalStakers}</span></div>
