@@ -161,12 +161,6 @@ export default function HomePage() {
                   </Collapsible>
                 </div>
               )}
-              <div className={styles.subsection}>
-                <Collapsible title="Stats" defaultOpen={true}>
-                  <div className={styles.posRow}><span>Total SOL staked</span><span className={styles.bold}>{fmt(state.totalSolDeposited, 2)}</span></div>
-                  <div className={styles.posRow}><span>Total stakers</span><span className={styles.bold}>{state.totalStakers}</span></div>
-                </Collapsible>
-              </div>
             </Collapsible>
           </div>
 
@@ -177,15 +171,57 @@ export default function HomePage() {
               <div className={styles.posRow}><span>KARMA price</span><span className={styles.bold}>{fmt(karmaPrice)}</span></div>
               <div className={styles.posRow}><span>Market cap</span><span className={styles.bold}>{fmt(totalSupply * karmaPrice, 2)}</span></div>
               <div className={styles.posRow}><span>Holders</span><span className={styles.bold}>{holders}</span></div>
-              <div className={styles.divider} />
-              <div className={styles.subLabel}>Liquidity Pool</div>
-              <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
-              <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
+
+              <div className={styles.subsection}>
+                <Collapsible title="Minting" defaultOpen={true}>
+                  <div className={styles.posRow}><span>Total SOL staked</span><span className={styles.bold}>{fmt(state.totalSolDeposited, 2)}</span></div>
+                  <div className={styles.posRow}><span>Total stakers</span><span className={styles.bold}>{state.totalStakers}</span></div>
+                  <div className={styles.posRow}><span>jitoSOL in vault</span><span>{state.totalJitosol.toFixed(6)}</span></div>
+                  <div className={styles.posRow}><span>Yield APY</span><span>~7.5%</span></div>
+                </Collapsible>
+              </div>
+
+              <div className={styles.subsection}>
+                <Collapsible title="Liquidity Pool" defaultOpen={true}>
+                  <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
+                  <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
+                </Collapsible>
+              </div>
+
+              <div className={styles.subsection}>
+                <Collapsible title="Supply Distribution" defaultOpen={true}>
+                  {(() => {
+                    const lpKarma = state.lpKarma;
+                    const holdersKarma = Math.max(0, totalSupply - lpKarma);
+                    const lpPct = totalSupply > 0 ? (lpKarma / totalSupply * 100) : 0;
+                    const holdersPct = totalSupply > 0 ? (holdersKarma / totalSupply * 100) : 0;
+                    // Pending yield: SOL staked * time since last global claim estimate
+                    // This is approximate - real yield is in jitoSOL appreciation
+                    const pendingYieldSol = state.totalSolDeposited * APY / 365; // rough daily
+                    const pendingKarma = karmaPrice > 0 ? pendingYieldSol / karmaPrice : 0;
+                    return (<>
+                      <div className={styles.posRow}><span>In holder wallets</span><span>{holdersKarma.toFixed(4)} KARMA <span className={styles.pct}>({holdersPct.toFixed(1)}%)</span></span></div>
+                      <div className={styles.posRow}><span>In liquidity pool</span><span>{lpKarma.toFixed(4)} KARMA <span className={styles.pct}>({lpPct.toFixed(1)}%)</span></span></div>
+                      <div className={styles.posRow}><span>Pending yield (est. daily)</span><span className={styles.muted}>{pendingKarma.toFixed(6)} KARMA</span></div>
+                      {totalSupply > 0 && (
+                        <div className={styles.bar}>
+                          <div className={styles.barFillHolders} style={{ width: `${holdersPct}%` }} />
+                          <div className={styles.barFillLP} style={{ width: `${lpPct}%` }} />
+                        </div>
+                      )}
+                      <div className={styles.legend}>
+                        <span><span className={styles.dotHolders} /> Holders</span>
+                        <span><span className={styles.dotLP} /> LP</span>
+                      </div>
+                    </>);
+                  })()}
+                </Collapsible>
+              </div>
             </Collapsible>
           </div>
 
           {/* ── PROFILE (last) ── */}
-          <Profile karmaPrice={karmaPrice} solPrice={solPrice} />
+          <Profile karmaPrice={karmaPrice} solPrice={solPrice} claimYield={claimYield} loading={loading} currentSolValue={currentSolValue} claimable={claimable} userStake={userStake} />
 
           {error && <div className={styles.error}>{error} <button className={styles.dismiss} onClick={() => setError(null)}>✕</button></div>}
           {txSig && <div className={styles.success}>TX: {txSig.slice(0, 20)}... ✓</div>}
