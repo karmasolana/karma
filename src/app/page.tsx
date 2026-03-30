@@ -34,24 +34,16 @@ export default function HomePage() {
   const [swapAmt, setSwapAmt] = useState("0.01");
   const [swapDir, setSwapDir] = useState<"buy" | "sell">("buy");
 
-  // Close settings on outside click
   useEffect(() => {
     const h = (e: MouseEvent) => { if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
   }, []);
 
   const reload = useCallback(async () => {
-    const s = await fetchKarmaState(connection);
-    setState(s);
-    const supply = await fetchKarmaTotalSupply(connection);
-    setTotalSupply(supply);
-    const h = await fetchKarmaHolders(connection);
-    setHolders(h);
-    if (wallet.publicKey) {
-      const u = await fetchUserStake(connection, wallet.publicKey);
-      setUserStake(u);
-    }
+    const s = await fetchKarmaState(connection); setState(s);
+    const supply = await fetchKarmaTotalSupply(connection); setTotalSupply(supply);
+    const h = await fetchKarmaHolders(connection); setHolders(h);
+    if (wallet.publicKey) { const u = await fetchUserStake(connection, wallet.publicKey); setUserStake(u); }
   }, [connection, wallet.publicKey]);
 
   useEffect(() => {
@@ -67,7 +59,6 @@ export default function HomePage() {
   const currentSolValue = userStake ? userStake.jitosolShare * jitoRate : 0;
   const claimable = userStake ? Math.max(0, currentSolValue - userStake.solValueAtLastClaim) : 0;
 
-  // Format value based on currency setting
   const fmt = (solVal: number, decimals = 4): string => {
     if (currency === "USDC" && solPrice) return `$${(solVal * solPrice).toFixed(decimals)}`;
     if (currency === "KARMA" && karmaPrice > 0) return `${(solVal / karmaPrice).toFixed(decimals)} KARMA`;
@@ -80,36 +71,26 @@ export default function HomePage() {
   const swapIn = parseFloat(swapAmt) || 0;
   let swapOut = 0;
   if (state && swapIn > 0) {
-    if (swapDir === "buy") {
-      const ns = state.lpSol + swapIn;
-      swapOut = state.lpKarma - (state.lpSol * state.lpKarma) / ns;
-    } else {
-      const nk = state.lpKarma + swapIn;
-      swapOut = state.lpSol - (state.lpSol * state.lpKarma) / nk;
-    }
+    if (swapDir === "buy") { const ns = state.lpSol + swapIn; swapOut = state.lpKarma - (state.lpSol * state.lpKarma) / ns; }
+    else { const nk = state.lpKarma + swapIn; swapOut = state.lpSol - (state.lpSol * state.lpKarma) / nk; }
   }
 
   return (
     <>
       <header className={styles.header}>
-        <div className={styles.logo}>
-          <span className={styles.logoK}>K</span>
-          <span className={styles.logoText}>Karma</span>
-        </div>
+        <div className={styles.logo}><span className={styles.logoK}>K</span><span className={styles.logoText}>Karma</span></div>
         <div className={styles.headerRight}>
           <WalletMultiButton className={styles.walletBtn} />
           <div className={styles.settingsWrap} ref={settingsRef}>
             <button className={styles.settingsBtn} onClick={() => setSettingsOpen(!settingsOpen)}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
             {settingsOpen && (
               <div className={styles.dropdown}>
                 <div className={styles.dropLabel}>Display currency</div>
-                <button className={`${styles.dropItem} ${currency === "SOL" ? styles.dropItemActive : ""}`} onClick={() => { cycleCurrency(); }}>◎ SOL</button>
-                <button className={`${styles.dropItem} ${currency === "USDC" ? styles.dropItemActive : ""}`} onClick={() => { cycleCurrency(); }}>$ USDC</button>
-                <button className={`${styles.dropItem} ${currency === "KARMA" ? styles.dropItemActive : ""}`} onClick={() => { cycleCurrency(); }}>K KARMA</button>
+                {(["SOL","USDC","KARMA"] as const).map(c => (
+                  <button key={c} className={`${styles.dropItem} ${currency === c ? styles.dropItemActive : ""}`} onClick={() => { cycleCurrency(); }}>{c === "SOL" ? "◎" : c === "USDC" ? "$" : "K"} {c}</button>
+                ))}
               </div>
             )}
           </div>
@@ -118,6 +99,9 @@ export default function HomePage() {
 
       {pageLoading ? <div className={styles.loading}>Loading...</div> : state ? (
         <>
+          {/* ── PRICE CHART (first) ── */}
+          <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
+
           {/* ── SWAP ── */}
           <div className={styles.panel}>
             <Collapsible title="Swap" defaultOpen={true} accent>
@@ -144,9 +128,6 @@ export default function HomePage() {
               )}
             </Collapsible>
           </div>
-
-          {/* ── PRICE CHART ── */}
-          <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
 
           {/* ── TRANSACTIONS ── */}
           <Transactions />
@@ -188,9 +169,6 @@ export default function HomePage() {
             </Collapsible>
           </div>
 
-          {/* ── PROFILE ── */}
-          <Profile karmaPrice={karmaPrice} solPrice={solPrice} />
-
           {/* ── TOKENOMICS ── */}
           <div className={styles.panel}>
             <Collapsible title="Karma Tokenomics" defaultOpen={true} accent>
@@ -204,6 +182,9 @@ export default function HomePage() {
               <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
             </Collapsible>
           </div>
+
+          {/* ── PROFILE (last) ── */}
+          <Profile karmaPrice={karmaPrice} solPrice={solPrice} />
 
           {error && <div className={styles.error}>{error} <button className={styles.dismiss} onClick={() => setError(null)}>✕</button></div>}
           {txSig && <div className={styles.success}>TX: {txSig.slice(0, 20)}... ✓</div>}
