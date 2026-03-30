@@ -80,7 +80,7 @@ export default function PriceChart({ karmaPrice, solPrice }: { karmaPrice: numbe
 
   return (
     <div className={styles.wrap}>
-      <Collapsible title={title} defaultOpen={true} accent>
+      <Collapsible title={title} defaultOpen={true} accent tooltip="Karma vs Sol or USD over time">
         <div className={styles.controls}>
           <button className={`${styles.modeBtn} ${mode === "SOL" ? styles.modeBtnActive : ""}`} onClick={() => setMode("SOL")}>SOL</button>
           <button className={`${styles.modeBtn} ${mode === "USD" ? styles.modeBtnActive : ""}`} onClick={() => setMode("USD")}>USD</button>

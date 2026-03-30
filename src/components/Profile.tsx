@@ -44,7 +44,7 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
 
   return (
     <div className={styles.wrap}>
-      <Collapsible title="Profile" defaultOpen={true} accent>
+      <Collapsible title="Profile" tooltip="Your wallet stats on Karma" defaultOpen={true} accent>
         <div className={styles.address}>{wallet.publicKey!.toBase58().slice(0, 6)}...{wallet.publicKey!.toBase58().slice(-4)}</div>
 
         <div className={styles.row}><span>KARMA Holdings</span><span className={styles.bold}>{karmaBal.toFixed(4)} KARMA</span></div>

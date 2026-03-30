@@ -96,7 +96,7 @@ export default function Trades() {
 
   return (
     <div className={styles.wrap}>
-      <Collapsible title="Trades" defaultOpen={false}>
+      <Collapsible title="Trades" tooltip="List of Orders through Karma AMM" defaultOpen={false}>
         {loading ? <div className={styles.empty}>Loading trades...</div> :
           trades.length === 0 ? <div className={styles.empty}>No trades yet</div> : (
           <div className={styles.scrollBox}>

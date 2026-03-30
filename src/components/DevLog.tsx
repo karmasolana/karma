@@ -88,7 +88,7 @@ export default function DevLog() {
 
   return (
     <div className={styles.wrap}>
-      <Collapsible title="Dev Log" defaultOpen={true} accent>
+      <Collapsible title="Dev Log" tooltip="Built in Karma Status Feed" defaultOpen={true} accent>
         {isAdmin && !editingId && (
           <div className={styles.adminArea}>
             {!posting ? (

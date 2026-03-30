@@ -36,6 +36,7 @@ export default function HomePage() {
   const [holders, setHolders] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const [welcomeHover, setWelcomeHover] = useState(false);
 
   const [stakeAmt, setStakeAmt] = useState("0.1");
   const [deflateAmt, setDeflateAmt] = useState("0.1");
@@ -127,24 +128,26 @@ export default function HomePage() {
 
       {pageLoading ? <div className={styles.loading}>Loading...</div> : state ? (
         <>
-          {/* ── PRICE TICKER ── */}
-          <div className={styles.priceTicker}>
-            <span className={styles.tickerPrice}>{karmaPrice.toFixed(4)} SOL / KARMA</span>
-            <span className={styles.tickerPnl}>{karmaPrice >= 1 ? "+" : ""}{((karmaPrice - 1) * 100).toFixed(2)}%</span>
+          {/* ── TOOLBAR ROW ── */}
+          <div className={styles.toolbar}>
+            <div
+              className={`${styles.welcomeChip} ${welcomeHover ? styles.welcomeChipHover : ""}`}
+              onMouseEnter={() => setWelcomeHover(true)}
+              onMouseLeave={() => setWelcomeHover(false)}
+            >
+              <span className={styles.welcomeChipText}>Welcome to Karma</span>
+              {welcomeHover && (
+                <div className={styles.welcomeTooltip}>
+                  <div className={styles.welcomeTooltipTitle}>Welcome to Karma</div>
+                  <p>Karma is a store of value token built on Solana and backed 1:1 by SOL. Karma can be minted and deflated by staking Sol. Sol can be withdrawn any time with no additional fees. You can buy and sell Karma using our Swap built with our own Liquidity Pools.</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* ── WELCOME ── */}
-          <div className={styles.welcome}>
-            <div className={styles.welcomeTitle}>Welcome to Karma</div>
-            <p className={styles.welcomeText}>
-              Karma is a store of value token built on Solana and backed 1:1 by SOL. Karma can be minted and deflated by staking Sol. Sol can be withdrawn any time with no additional fees. You can buy and sell Karma using our Swap built with our own Liquidity Pools.
-            </p>
-          </div>
-          <div className={styles.sectionDivider} />
-
-          {/* ── SWAP ── */}
+          {/* ── SWAP (non-collapsible) ── */}
           <div className={styles.panel}>
-            <Collapsible title="Swap" defaultOpen={true} accent>
+            <Collapsible title="Swap" defaultOpen={true} accent collapsible={false} tooltip="Swap between Sol and Karma using our own Liquidity and AMM for no fees">
               <div className={styles.priceRow}>
                 <span className={styles.priceBig}>{karmaPrice.toFixed(4)} SOL</span>
                 <span className={styles.priceSlash}>/</span>
@@ -171,7 +174,7 @@ export default function HomePage() {
 
           {/* ── MINT KARMA ── */}
           <div className={styles.panel}>
-            <Collapsible title="Mint Karma" defaultOpen={true} accent>
+            <Collapsible title="Mint Karma" defaultOpen={true} accent tooltip="Sol is swapped to jitoSol. When a user claims their Karma staking rewards, the jitoSol APY is converted into Sol. The sol is added into our Sol liquidity pool and an equivalent amount of Karma is minted from the protocol and sent to your wallet. If you were to immediately swap your Karma rewards for Sol you would obtain the 7.5% APY that jitoSol provides">
               <div className={styles.desc}>Stake SOL to earn Karma. Yield goes to you as KARMA + SOL added to LP.</div>
               {!wallet.connected ? <div className={styles.hint}>Connect wallet to mint</div> : (
                 <>
@@ -190,7 +193,7 @@ export default function HomePage() {
                 <div className={styles.subsection}>
                   <Collapsible title="Your Stake" defaultOpen={true}>
                     <div className={styles.posRow}><span>SOL deposited</span><span className={styles.bold}>{fmt(userStake.solDeposited)}</span></div>
-                    <div className={styles.posRow}><span>Claimable yield</span><span className={styles.green}>{claimableKarma.toFixed(6)} KARMA</span></div>
+                    <div className={styles.posRow}><span>Claimable yield</span><span className={styles.green}>{claimableKarma < 0.000001 ? "<0.000001" : claimableKarma.toFixed(6)} KARMA</span></div>
                     <div className={styles.btnRow}>
                       <button className={styles.btn} onClick={() => claimYield(currentSolValue)} disabled={anyLoading || claimable <= 0}>Claim KARMA</button>
                       <button className={styles.btnSecondary} onClick={() => withdraw(userStake.jitosolShare)} disabled={anyLoading}>Withdraw SOL</button>
@@ -201,49 +204,9 @@ export default function HomePage() {
             </Collapsible>
           </div>
 
-          {/* ── DEFLATE KARMA ── */}
+          {/* ── SUPPLY KARMA (above deflate) ── */}
           <div className={styles.panel}>
-            <Collapsible title="Deflate Karma" defaultOpen={true} accent>
-              <div className={styles.desc}>Stake KARMA to increase its price. Yield SOL is added to LP — pure price appreciation for all holders.</div>
-              {!wallet.connected ? <div className={styles.hint}>Connect wallet to deflate</div> : (
-                <>
-                  <div className={styles.inputRow}>
-                    <input type="number" value={deflateAmt} onChange={e => setDeflateAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
-                    <span className={styles.inputUnit}>KARMA</span>
-                  </div>
-                  <button className={styles.btn} onClick={() => deflateDeposit(deflateIn)} disabled={anyLoading || deflateIn <= 0}>
-                    {anyLoading ? "Processing..." : `Stake ${deflateAmt} KARMA`}
-                  </button>
-                  <div className={styles.rentNote}>Your KARMA is sold for SOL, converted to jitoSOL, and earns yield. You can withdraw your full KARMA amount anytime.</div>
-                </>
-              )}
-              {wallet.connected && deflateUserStake && (
-                <div className={styles.subsection}>
-                  <Collapsible title="Your Deflate Stake" defaultOpen={true}>
-                    <div className={styles.posRow}><span>KARMA deposited</span><span className={styles.bold}>{deflateUserStake.karmaDeposited.toFixed(4)} KARMA</span></div>
-                    <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(defClaimable)}</span></div>
-                    <div className={styles.btnRow}>
-                      <button className={styles.btn} onClick={() => deflateClaim(defCurrentSolValue)} disabled={anyLoading || defClaimable <= 0}>Donate Yield to LP</button>
-                      <button className={styles.btnSecondary} onClick={() => deflateWithdraw(deflateUserStake.jitosolShare, deflateUserStake.karmaDeposited)} disabled={anyLoading}>Withdraw KARMA</button>
-                    </div>
-                  </Collapsible>
-                </div>
-              )}
-              {deflateState && (
-                <div className={styles.subsection}>
-                  <Collapsible title="Pool Stats" defaultOpen={false}>
-                    <div className={styles.posRow}><span>Total KARMA staked</span><span>{deflateState.totalKarmaDeposited.toFixed(4)} KARMA</span></div>
-                    <div className={styles.posRow}><span>Total stakers</span><span>{deflateState.totalStakers}</span></div>
-                    <div className={styles.posRow}><span>Total yield donated</span><span className={styles.green}>{fmt(deflateState.totalYieldDonated)}</span></div>
-                  </Collapsible>
-                </div>
-              )}
-            </Collapsible>
-          </div>
-
-          {/* ── SUPPLY KARMA ── */}
-          <div className={styles.panel}>
-            <Collapsible title="Supply Karma" defaultOpen={true} accent>
+            <Collapsible title="Supply Karma" defaultOpen={true} accent tooltip="Stake SOL to deepen liquidity on both sides of the pool. Yield adds SOL + equal KARMA to LP for better swaps.">
               <div className={styles.desc}>Stake SOL to deepen liquidity. Yield adds SOL + equal KARMA to LP — better swaps for everyone.</div>
               {!wallet.connected ? <div className={styles.hint}>Connect wallet to supply</div> : (
                 <>
@@ -269,13 +232,34 @@ export default function HomePage() {
                   </Collapsible>
                 </div>
               )}
-              {supplyState && (
+            </Collapsible>
+          </div>
+
+          {/* ── DEFLATE KARMA ── */}
+          <div className={styles.panel}>
+            <Collapsible title="Deflate Karma" defaultOpen={true} accent tooltip="Stake KARMA to increase its price. Your KARMA is sold for SOL, earns yield, and the yield SOL is donated to the LP — pure price appreciation for all holders.">
+              <div className={styles.desc}>Stake KARMA to increase its price. Yield SOL is added to LP — pure price appreciation for all holders.</div>
+              {!wallet.connected ? <div className={styles.hint}>Connect wallet to deflate</div> : (
+                <>
+                  <div className={styles.inputRow}>
+                    <input type="number" value={deflateAmt} onChange={e => setDeflateAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
+                    <span className={styles.inputUnit}>KARMA</span>
+                  </div>
+                  <button className={styles.btn} onClick={() => deflateDeposit(deflateIn)} disabled={anyLoading || deflateIn <= 0}>
+                    {anyLoading ? "Processing..." : `Stake ${deflateAmt} KARMA`}
+                  </button>
+                  <div className={styles.rentNote}>Your KARMA is sold for SOL, converted to jitoSOL, and earns yield. You can withdraw your full KARMA amount anytime.</div>
+                </>
+              )}
+              {wallet.connected && deflateUserStake && (
                 <div className={styles.subsection}>
-                  <Collapsible title="Pool Stats" defaultOpen={false}>
-                    <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(supplyState.totalSolDeposited)}</span></div>
-                    <div className={styles.posRow}><span>Total stakers</span><span>{supplyState.totalStakers}</span></div>
-                    <div className={styles.posRow}><span>Total yield donated</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)}</span></div>
-                    <div className={styles.posRow}><span>Total KARMA minted to LP</span><span>{supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
+                  <Collapsible title="Your Deflate Stake" defaultOpen={true}>
+                    <div className={styles.posRow}><span>KARMA deposited</span><span className={styles.bold}>{deflateUserStake.karmaDeposited.toFixed(4)} KARMA</span></div>
+                    <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(defClaimable)}</span></div>
+                    <div className={styles.btnRow}>
+                      <button className={styles.btn} onClick={() => deflateClaim(defCurrentSolValue)} disabled={anyLoading || defClaimable <= 0}>Donate Yield to LP</button>
+                      <button className={styles.btnSecondary} onClick={() => deflateWithdraw(deflateUserStake.jitosolShare, deflateUserStake.karmaDeposited)} disabled={anyLoading}>Withdraw KARMA</button>
+                    </div>
                   </Collapsible>
                 </div>
               )}
@@ -287,19 +271,37 @@ export default function HomePage() {
 
           {/* ── TOKENOMICS ── */}
           <div className={styles.panel}>
-            <Collapsible title="Karma Tokenomics" defaultOpen={true} accent>
+            <Collapsible title="Karma Tokenomics" defaultOpen={true} accent tooltip="Live Karma token economics">
               <div className={styles.posRow}><span>Total supply</span><span className={styles.bold}>{totalSupply.toFixed(4)} KARMA</span></div>
               <div className={styles.posRow}><span>KARMA price</span><span className={styles.bold}>{fmt(karmaPrice)}</span></div>
               <div className={styles.posRow}><span>Market cap</span><span className={styles.bold}>{fmt(totalSupply * karmaPrice, 2)}</span></div>
               <div className={styles.posRow}><span>Holders</span><span className={styles.bold}>{holders}</span></div>
               <div className={styles.subsection}>
-                <Collapsible title="Minting" defaultOpen={true}>
-                  <div className={styles.posRow}><span>Total SOL staked (Mint)</span><span className={styles.bold}>{fmt(state.totalSolDeposited, 2)}</span></div>
-                  <div className={styles.posRow}><span>Total stakers (Mint)</span><span className={styles.bold}>{state.totalStakers}</span></div>
+                <Collapsible title="Mint Pool" defaultOpen={true}>
+                  <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(state.totalSolDeposited, 2)}</span></div>
+                  <div className={styles.posRow}><span>Stakers</span><span>{state.totalStakers}</span></div>
                   <div className={styles.posRow}><span>jitoSOL in vault</span><span>{state.totalJitosol.toFixed(6)}</span></div>
-                  <div className={styles.posRow}><span>Yield APY</span><span>~7.5%</span></div>
                 </Collapsible>
               </div>
+              {deflateState && (
+                <div className={styles.subsection}>
+                  <Collapsible title="Deflate Pool" defaultOpen={true}>
+                    <div className={styles.posRow}><span>Total KARMA staked</span><span>{deflateState.totalKarmaDeposited.toFixed(4)} KARMA</span></div>
+                    <div className={styles.posRow}><span>Stakers</span><span>{deflateState.totalStakers}</span></div>
+                    <div className={styles.posRow}><span>Total yield donated</span><span className={styles.green}>{fmt(deflateState.totalYieldDonated)}</span></div>
+                  </Collapsible>
+                </div>
+              )}
+              {supplyState && (
+                <div className={styles.subsection}>
+                  <Collapsible title="Supply Pool" defaultOpen={true}>
+                    <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(supplyState.totalSolDeposited)}</span></div>
+                    <div className={styles.posRow}><span>Stakers</span><span>{supplyState.totalStakers}</span></div>
+                    <div className={styles.posRow}><span>Total yield donated</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)}</span></div>
+                    <div className={styles.posRow}><span>KARMA minted to LP</span><span>{supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
+                  </Collapsible>
+                </div>
+              )}
               <div className={styles.subsection}>
                 <Collapsible title="Liquidity Pool" defaultOpen={true}>
                   <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
