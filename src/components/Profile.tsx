@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { KARMA_MINT } from "@/utils/constants";
+import { KARMA_MINT, PROGRAM_ID, findKarmaStatePDA, findDeflateStatePDA, findSupplyStatePDA } from "@/utils/constants";
 import { UserStake, DeflateUserStake } from "@/utils/accounts";
 import Collapsible from "./Collapsible";
 import styles from "./Profile.module.css";
@@ -20,6 +20,8 @@ const ACHIEVEMENTS = [
 ];
 
 interface HolderEntry { wallet: string; balance: number; }
+interface StakeEntry { wallet: string; value: number; }
+
 interface ProfileProps {
   karmaPrice: number; solPrice: number | null;
   claimYield: (v: number) => Promise<void>; loading: boolean;
@@ -45,7 +47,10 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
   const [username, setUsername] = useState("");
   const [xHandle, setXHandle] = useState("");
   const [holders, setHolders] = useState<HolderEntry[]>([]);
-  const [lbFilter, setLbFilter] = useState<"holdings">("holdings");
+  const [mintStakers, setMintStakers] = useState<StakeEntry[]>([]);
+  const [deflateStakers, setDeflateStakers] = useState<StakeEntry[]>([]);
+  const [lbFilter, setLbFilter] = useState<"holdings" | "sol_staked" | "karma_staked">("holdings");
+  const [lbLoaded, setLbLoaded] = useState<Set<string>>(new Set());
 
   const claimableKarma = karmaPrice > 0 ? claimable / karmaPrice : claimable;
   const pk = wallet.publicKey?.toBase58() || "";
@@ -60,22 +65,53 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
     if (profiles[pk]) { setUsername(profiles[pk].username || ""); setXHandle(profiles[pk].xHandle || ""); }
   }, [wallet.publicKey, connection, pk]);
 
-  // Fetch holders for leaderboard
+  // Fetch leaderboard data on demand
   useEffect(() => {
-    if (tab !== "leaderboard" || holders.length > 0) return;
-    connection.getProgramAccounts(
-      new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-      { filters: [{ dataSize: 165 }, { memcmp: { offset: 0, bytes: KARMA_MINT.toBase58() } }] }
-    ).then(accounts => {
-      const list: HolderEntry[] = accounts.map(a => {
-        const data = Buffer.from(a.account.data);
-        const owner = new PublicKey(data.subarray(32, 64)).toBase58();
-        const amount = Number(data.readBigUInt64LE(64)) / 1e9;
-        return { wallet: owner, balance: amount };
-      }).filter(h => h.balance > 0).sort((a, b) => b.balance - a.balance);
-      setHolders(list);
-    }).catch(() => {});
-  }, [tab, holders.length, connection]);
+    if (tab !== "leaderboard") return;
+
+    if (lbFilter === "holdings" && !lbLoaded.has("holdings")) {
+      connection.getProgramAccounts(
+        new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+        { filters: [{ dataSize: 165 }, { memcmp: { offset: 0, bytes: KARMA_MINT.toBase58() } }] }
+      ).then(accounts => {
+        const list = accounts.map(a => {
+          const data = Buffer.from(a.account.data);
+          return { wallet: new PublicKey(data.subarray(32, 64)).toBase58(), balance: Number(data.readBigUInt64LE(64)) / 1e9 };
+        }).filter(h => h.balance > 0).sort((a, b) => b.balance - a.balance);
+        setHolders(list);
+        setLbLoaded(prev => new Set([...prev, "holdings"]));
+      }).catch(() => {});
+    }
+
+    if (lbFilter === "sol_staked" && !lbLoaded.has("sol_staked")) {
+      // Fetch all UserStake accounts (mint pool) - 81 bytes, owned by program
+      connection.getProgramAccounts(PROGRAM_ID, { filters: [{ dataSize: 81 }, { memcmp: { offset: 0, bytes: "AgAAAAAAAAA" } }] }).then(accounts => {
+        // disc [2,0,0,0,0,0,0,0] = "AgAAAAAAAAA=" base64
+        const list = accounts.map(a => {
+          const data = Buffer.from(a.account.data);
+          const w = new PublicKey(data.subarray(8, 40)).toBase58();
+          const sol = Number(data.readBigUInt64LE(40)) / 1e9;
+          return { wallet: w, value: sol };
+        }).filter(s => s.value > 0).sort((a, b) => b.value - a.value);
+        setMintStakers(list);
+        setLbLoaded(prev => new Set([...prev, "sol_staked"]));
+      }).catch(() => {});
+    }
+
+    if (lbFilter === "karma_staked" && !lbLoaded.has("karma_staked")) {
+      // Fetch all DeflateUserStake accounts - 81 bytes, disc [4,0,0,0,0,0,0,0] = "BAAAAAAAAA=="
+      connection.getProgramAccounts(PROGRAM_ID, { filters: [{ dataSize: 81 }, { memcmp: { offset: 0, bytes: "BAAAAAAAAAA" } }] }).then(accounts => {
+        const list = accounts.map(a => {
+          const data = Buffer.from(a.account.data);
+          const w = new PublicKey(data.subarray(8, 40)).toBase58();
+          const karma = Number(data.readBigUInt64LE(40)) / 1e9;
+          return { wallet: w, value: karma };
+        }).filter(s => s.value > 0).sort((a, b) => b.value - a.value);
+        setDeflateStakers(list);
+        setLbLoaded(prev => new Set([...prev, "karma_staked"]));
+      }).catch(() => {});
+    }
+  }, [tab, lbFilter, lbLoaded, connection]);
 
   const saveProfile = () => {
     const profiles = loadProfiles();
@@ -94,6 +130,11 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
   const defStaked = deflateUserStake ? deflateUserStake.karmaDeposited : 0;
   const achState = { karmaBal, mintStaked: stakedSol, supplyStaked: supStaked, deflateStaked: defStaked, swaps: 0, claims: 0 };
   const profiles = loadProfiles();
+
+  const lbData = lbFilter === "holdings" ? holders.map(h => ({ wallet: h.wallet, value: h.balance })) :
+    lbFilter === "sol_staked" ? mintStakers :
+    deflateStakers;
+  const lbUnit = lbFilter === "holdings" ? "KARMA" : lbFilter === "sol_staked" ? "SOL" : "KARMA";
 
   return (
     <div className={styles.wrap}>
@@ -118,7 +159,6 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
             </div>
           </div>
         )}
-
         <div className={styles.tabs}>
           <button className={`${styles.tab} ${tab === "stats" ? styles.tabActive : ""}`} onClick={() => setTab("stats")}>Stats</button>
           <button className={`${styles.tab} ${tab === "achievements" ? styles.tabActive : ""}`} onClick={() => setTab("achievements")}>Achievements</button>
@@ -128,46 +168,36 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
         {tab === "stats" && (<>
           <div className={styles.row}><span>KARMA Holdings</span><span className={styles.bold}>{karmaBal.toFixed(4)} KARMA</span></div>
           <div className={styles.row}><span>KARMA PnL</span><span className={pnlPct >= 0 ? styles.green : styles.red}>{pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%</span></div>
-          <div className={styles.sub}>
-            <Collapsible title="Mint Pool" defaultOpen={true}>
-              {stakedSol > 0 ? (<>
-                <div className={styles.row}><span>SOL Staked</span><span className={styles.bold}>{stakedSol.toFixed(4)} SOL</span></div>
-                <div className={styles.row}><span>Daily</span><span className={styles.green}>+{dailyKarma.toFixed(6)} KARMA</span></div>
-                <div className={styles.row}><span>Weekly</span><span className={styles.green}>+{weeklyKarma.toFixed(6)} KARMA</span></div>
-                <div className={styles.row}><span>Claimable</span><span className={styles.green}>{claimableKarma < 0.000001 && claimableKarma > 0 ? "<0.000001" : claimableKarma.toFixed(6)} KARMA</span></div>
-                <button className={styles.claimBtn} onClick={() => claimYield(currentSolValue)} disabled={loading || claimable <= 0}>{loading ? "..." : "Claim KARMA"}</button>
-              </>) : <div className={styles.empty}>No mint stake</div>}
-            </Collapsible>
-          </div>
-          <div className={styles.sub}>
-            <Collapsible title="Supply Pool" defaultOpen={true}>
-              {supStaked > 0 ? (<>
-                <div className={styles.row}><span>SOL Staked</span><span className={styles.bold}>{supStaked.toFixed(4)} SOL</span></div>
-                <div className={styles.row}><span>Purpose</span><span className={styles.muted}>Deepening LP liquidity</span></div>
-              </>) : <div className={styles.empty}>No supply stake</div>}
-            </Collapsible>
-          </div>
-          <div className={styles.sub}>
-            <Collapsible title="Deflation Pool" defaultOpen={true}>
-              {defStaked > 0 ? (<>
-                <div className={styles.row}><span>KARMA Staked</span><span className={styles.bold}>{defStaked.toFixed(4)} KARMA</span></div>
-                <div className={styles.row}><span>Purpose</span><span className={styles.muted}>Price appreciation</span></div>
-              </>) : <div className={styles.empty}>No deflate stake</div>}
-            </Collapsible>
-          </div>
+          <div className={styles.sub}><Collapsible title="Mint Pool" defaultOpen={true}>
+            {stakedSol > 0 ? (<>
+              <div className={styles.row}><span>SOL Staked</span><span className={styles.bold}>{stakedSol.toFixed(4)} SOL</span></div>
+              <div className={styles.row}><span>Daily</span><span className={styles.green}>+{dailyKarma.toFixed(6)} KARMA</span></div>
+              <div className={styles.row}><span>Weekly</span><span className={styles.green}>+{weeklyKarma.toFixed(6)} KARMA</span></div>
+              <div className={styles.row}><span>Claimable</span><span className={styles.green}>{claimableKarma < 0.000001 && claimableKarma > 0 ? "<0.000001" : claimableKarma.toFixed(6)} KARMA</span></div>
+              <button className={styles.claimBtn} onClick={() => claimYield(currentSolValue)} disabled={loading || claimable <= 0}>{loading ? "..." : "Claim KARMA"}</button>
+            </>) : <div className={styles.empty}>No mint stake</div>}
+          </Collapsible></div>
+          <div className={styles.sub}><Collapsible title="Supply Pool" defaultOpen={true}>
+            {supStaked > 0 ? (<>
+              <div className={styles.row}><span>SOL Staked</span><span className={styles.bold}>{supStaked.toFixed(4)} SOL</span></div>
+            </>) : <div className={styles.empty}>No supply stake</div>}
+          </Collapsible></div>
+          <div className={styles.sub}><Collapsible title="Deflation Pool" defaultOpen={true}>
+            {defStaked > 0 ? (<>
+              <div className={styles.row}><span>KARMA Staked</span><span className={styles.bold}>{defStaked.toFixed(4)} KARMA</span></div>
+            </>) : <div className={styles.empty}>No deflate stake</div>}
+          </Collapsible></div>
         </>)}
 
         {tab === "achievements" && (
           <div className={styles.achGrid}>
             {ACHIEVEMENTS.map(a => {
               const earned = a.check(achState);
-              return (
-                <div key={a.id} className={`${styles.achCard} ${earned ? styles.achEarned : styles.achLocked}`}>
-                  <div className={styles.achIcon}>{earned ? "✦" : "○"}</div>
-                  <div className={styles.achName}>{a.name}</div>
-                  <div className={styles.achDesc}>{a.desc}</div>
-                </div>
-              );
+              return (<div key={a.id} className={`${styles.achCard} ${earned ? styles.achEarned : styles.achLocked}`}>
+                <div className={styles.achIcon}>{earned ? "✦" : "○"}</div>
+                <div className={styles.achName}>{a.name}</div>
+                <div className={styles.achDesc}>{a.desc}</div>
+              </div>);
             })}
           </div>
         )}
@@ -175,29 +205,23 @@ export default function Profile({ karmaPrice, solPrice, claimYield, loading, cur
         {tab === "leaderboard" && (<>
           <div className={styles.lbFilters}>
             <button className={`${styles.lbFilter} ${lbFilter === "holdings" ? styles.lbFilterActive : ""}`} onClick={() => setLbFilter("holdings")}>Holdings</button>
+            <button className={`${styles.lbFilter} ${lbFilter === "sol_staked" ? styles.lbFilterActive : ""}`} onClick={() => setLbFilter("sol_staked")}>SOL Staked</button>
+            <button className={`${styles.lbFilter} ${lbFilter === "karma_staked" ? styles.lbFilterActive : ""}`} onClick={() => setLbFilter("karma_staked")}>KARMA Staked</button>
           </div>
-          {holders.length === 0 ? <div className={styles.empty}>Loading...</div> : (
+          {lbData.length === 0 ? <div className={styles.empty}>Loading...</div> : (
             <div className={styles.lbList}>
-              {holders.map((h, i) => {
+              {lbData.map((h, i) => {
                 const prof = profiles[h.wallet];
                 const isYou = h.wallet === pk;
-                return (
-                  <div key={h.wallet} className={`${styles.lbRow} ${isYou ? styles.lbRowYou : ""}`}>
-                    <span className={styles.lbRank}>#{i + 1}</span>
-                    <div className={styles.lbInfo}>
-                      {prof?.username ? (
-                        <span className={styles.lbName}>{prof.username}</span>
-                      ) : (
-                        <span className={styles.lbWallet}>{h.wallet.slice(0, 6)}...{h.wallet.slice(-4)}</span>
-                      )}
-                      {prof?.xHandle && (
-                        <a href={`https://x.com/${prof.xHandle.replace("@","")}`} target="_blank" rel="noopener noreferrer" className={styles.lbX}>@{prof.xHandle.replace("@","")}</a>
-                      )}
-                      {isYou && <span className={styles.lbYou}>You</span>}
-                    </div>
-                    <span className={styles.lbVal}>{h.balance.toFixed(4)}</span>
+                return (<div key={h.wallet} className={`${styles.lbRow} ${isYou ? styles.lbRowYou : ""}`}>
+                  <span className={styles.lbRank}>#{i + 1}</span>
+                  <div className={styles.lbInfo}>
+                    {prof?.username ? <span className={styles.lbName}>{prof.username}</span> : <span className={styles.lbWallet}>{h.wallet.slice(0, 6)}...{h.wallet.slice(-4)}</span>}
+                    {prof?.xHandle && <a href={`https://x.com/${prof.xHandle.replace("@","")}`} target="_blank" rel="noopener noreferrer" className={styles.lbX}>@{prof.xHandle.replace("@","")}</a>}
+                    {isYou && <span className={styles.lbYou}>You</span>}
                   </div>
-                );
+                  <span className={styles.lbVal}>{h.value.toFixed(4)} {lbUnit}</span>
+                </div>);
               })}
             </div>
           )}

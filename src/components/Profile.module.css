@@ -33,8 +33,8 @@
 .achLocked .achIcon { color: #444; }
 .achName { font-size: 11px; font-weight: 700; color: #e8e8ea; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
 .achDesc { font-size: 10px; color: #888; }
-.lbFilters { display: flex; gap: 4px; margin-bottom: 10px; }
-.lbFilter { padding: 5px 12px; border-radius: 6px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit; text-transform: uppercase; }
+.lbFilters { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+.lbFilter { padding: 5px 10px; border-radius: 6px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 9px; font-weight: 700; cursor: pointer; font-family: inherit; text-transform: uppercase; letter-spacing: 0.3px; }
 .lbFilterActive { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
 .lbList { max-height: 300px; overflow-y: auto; }
 .lbList::-webkit-scrollbar { width: 4px; }
@@ -42,10 +42,10 @@
 .lbRow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #1a1a25; margin-bottom: 6px; }
 .lbRowYou { border: 1px solid #8b5cf630; }
 .lbRank { font-size: 12px; font-weight: 700; color: #8b5cf6; min-width: 28px; }
-.lbInfo { flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lbInfo { flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
 .lbName { font-size: 13px; font-weight: 700; color: #e8e8ea; }
-.lbWallet { font-size: 12px; color: #888; font-family: monospace; }
+.lbWallet { font-size: 11px; color: #888; font-family: monospace; }
 .lbX { font-size: 10px; color: #8b5cf6; text-decoration: none; }
 .lbX:hover { text-decoration: underline; }
 .lbYou { font-size: 8px; font-weight: 700; color: #8b5cf6; background: #8b5cf615; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
-.lbVal { font-size: 13px; font-weight: 700; color: #e8e8ea; }
+.lbVal { font-size: 12px; font-weight: 700; color: #e8e8ea; white-space: nowrap; }

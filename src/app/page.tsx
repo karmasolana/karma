@@ -7,7 +7,6 @@ import { getJitosolRate } from "@/utils/jupiter";
 import { useKarma, useDeflatePool, useSupplyPool } from "@/hooks/useKarma";
 import { useSettings } from "@/contexts/Settings";
 import PriceChart from "@/components/PriceChart";
-import Trades from "@/components/Trades";
 import Profile from "@/components/Profile";
 import DevLog from "@/components/DevLog";
 import Collapsible from "@/components/Collapsible";
@@ -37,6 +36,8 @@ export default function HomePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const [welcomeHover, setWelcomeHover] = useState(false);
+  const [showSwap, setShowSwap] = useState(true);
+  const [lastTx, setLastTx] = useState<{ sig: string; time: number } | null>(null);
 
   const [stakeAmt, setStakeAmt] = useState("0.1");
   const [deflateAmt, setDeflateAmt] = useState("0.1");
@@ -60,6 +61,11 @@ export default function HomePage() {
       const u = await fetchUserStake(connection, wallet.publicKey); setUserStake(u);
       const du = await fetchDeflateUserStake(connection, wallet.publicKey); setDeflateUserStake(du);
       const su = await fetchSupplyUserStake(connection, wallet.publicKey); setSupplyUserStake(su);
+      // Fetch last tx
+      try {
+        const sigs = await connection.getSignaturesForAddress(wallet.publicKey, { limit: 1 });
+        if (sigs.length > 0) setLastTx({ sig: sigs[0].signature, time: sigs[0].blockTime || 0 });
+      } catch {}
     }
   }, [connection, wallet.publicKey]);
 
@@ -108,9 +114,16 @@ export default function HomePage() {
   const anyError = error || dError || sError;
   const clearErrors = () => { setError(null); dSetError(null); sSetError(null); };
   const deflateSupplyReduced = deflateState && karmaPrice > 0 ? deflateState.totalYieldDonated / karmaPrice : 0;
-
-  // Karma minted stat: total supply minus initial LP seed (0.25)
   const totalKarmaMinted = Math.max(0, totalSupply - 0.25);
+
+  const fmtTime = (ts: number) => {
+    if (!ts) return "";
+    const d = Date.now() / 1000 - ts;
+    if (d < 60) return "just now";
+    if (d < 3600) return `${Math.floor(d / 60)}m ago`;
+    if (d < 86400) return `${Math.floor(d / 3600)}h ago`;
+    return `${Math.floor(d / 86400)}d ago`;
+  };
 
   return (
     <>
@@ -154,20 +167,25 @@ export default function HomePage() {
                 </div>
               )}
             </div>
+            <button className={`${styles.kCoinBtn} ${showSwap ? styles.kCoinActive : ""}`} onClick={() => setShowSwap(!showSwap)} title="Toggle swap panel">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill={showSwap ? "#8b5cf640" : "#8b5cf620"} stroke="#8b5cf6" strokeWidth="1.5"/>
+                <text x="12" y="16" textAnchor="middle" fill="#8b5cf6" fontSize="11" fontWeight="800">K</text>
+              </svg>
+            </button>
           </div>
 
-          {/* ── MAIN PANEL (Swap + Pool Tabs) ── */}
-          <div className={styles.panel}>
-            <div className={styles.mainTabs}>
-              <button className={`${styles.mainTab} ${activeTab === "swap" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("swap")} title="Swap between Sol and Karma for no fees">Swap</button>
-              <button className={`${styles.mainTab} ${activeTab === "mint" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("mint")} title="Stake Sol to mint Karma rewards, withdraw at any time for no fees">Mint</button>
-              <button className={`${styles.mainTab} ${activeTab === "supply" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("supply")} title="Stake Sol to donate liquidity to Karma">Supply</button>
-              <button className={`${styles.mainTab} ${activeTab === "deflate" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("deflate")} title="Stake Karma to deflate Karma supply">Deflate</button>
-            </div>
+          {/* ── SWAP PANEL (toggled by K coin) ── */}
+          {showSwap && (<>
+            <div className={styles.panel}>
+              <div className={styles.mainTabs}>
+                <button className={`${styles.mainTab} ${activeTab === "swap" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("swap")} title="Swap between Sol and Karma for no fees">Swap</button>
+                <button className={`${styles.mainTab} ${activeTab === "mint" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("mint")} title="Stake Sol to mint Karma rewards, withdraw at any time for no fees">Mint</button>
+                <button className={`${styles.mainTab} ${activeTab === "supply" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("supply")} title="Stake Sol to donate liquidity to Karma">Supply</button>
+                <button className={`${styles.mainTab} ${activeTab === "deflate" ? styles.mainTabActive : ""}`} onClick={() => setActiveTab("deflate")} title="Stake Karma to deflate Karma supply">Deflate</button>
+              </div>
 
-            {/* ── SWAP TAB ── */}
-            {activeTab === "swap" && (
-              <>
+              {activeTab === "swap" && (<>
                 <div className={styles.priceRow}>
                   <span className={styles.priceBig}>{karmaPrice.toFixed(4)} SOL</span>
                   <span className={styles.priceSlash}>/</span>
@@ -177,129 +195,105 @@ export default function HomePage() {
                   <button className={`${styles.swapTab} ${swapDir === "buy" ? styles.swapTabActive : ""}`} onClick={() => setSwapDir("buy")}>Buy</button>
                   <button className={`${styles.swapTab} ${swapDir === "sell" ? styles.swapTabActive : ""}`} onClick={() => setSwapDir("sell")}>Sell</button>
                 </div>
-                {!wallet.connected ? <div className={styles.hint}>Connect wallet to swap</div> : (
-                  <>
-                    <div className={styles.swapLabel}>{swapDir === "buy" ? "You pay" : "You sell"}</div>
-                    <div className={styles.swapBox}>
-                      <input type="number" value={swapAmt} onChange={e => setSwapAmt(e.target.value)} min="0.001" step="0.01" className={styles.swapInput} />
-                      <span className={styles.swapBadge}>{swapDir === "buy" ? "SOL" : "KARMA"}</span>
+                {!wallet.connected ? <div className={styles.hint}>Connect wallet to swap</div> : (<>
+                  <div className={styles.swapLabel}>{swapDir === "buy" ? "You pay" : "You sell"}</div>
+                  <div className={styles.swapBox}>
+                    <input type="number" value={swapAmt} onChange={e => setSwapAmt(e.target.value)} min="0.001" step="0.01" className={styles.swapInput} />
+                    <span className={styles.swapBadge}>{swapDir === "buy" ? "SOL" : "KARMA"}</span>
+                  </div>
+                  <button className={styles.swapArrowBtn} onClick={() => setSwapDir(swapDir === "buy" ? "sell" : "buy")}>⇅</button>
+                  <div className={styles.swapLabel}>You receive</div>
+                  <div className={`${styles.swapBox} ${styles.swapBoxOut}`}>
+                    <span className={styles.swapOutAmt}>{swapOut > 0 ? swapOut.toFixed(6) : "0.000000"}</span>
+                    <span className={`${styles.swapBadge} ${styles.swapBadgeOut}`}>{swapDir === "buy" ? "KARMA" : "SOL"}</span>
+                  </div>
+                  {swapOut > 0 && state && (
+                    <div className={styles.swapRate}>
+                      1 KARMA = {karmaPrice.toFixed(4)} SOL
+                      {(() => { const pa = swapDir === "buy" ? (state.lpSol + swapIn) / (state.lpKarma - swapOut) : (state.lpSol - swapOut) / (state.lpKarma + swapIn); const impact = ((pa - karmaPrice) / karmaPrice * 100); return <span className={impact > 0 ? styles.impactUp : styles.impactDown}> · Impact: {impact > 0 ? "+" : ""}{impact.toFixed(2)}%</span>; })()}
                     </div>
-                    <button className={styles.swapArrowBtn} onClick={() => setSwapDir(swapDir === "buy" ? "sell" : "buy")}>⇅</button>
-                    <div className={styles.swapLabel}>You receive</div>
-                    <div className={`${styles.swapBox} ${styles.swapBoxOut}`}>
-                      <span className={styles.swapOutAmt}>{swapOut > 0 ? swapOut.toFixed(6) : "0.000000"}</span>
-                      <span className={`${styles.swapBadge} ${styles.swapBadgeOut}`}>{swapDir === "buy" ? "KARMA" : "SOL"}</span>
-                    </div>
-                    {swapOut > 0 && state && (
-                      <div className={styles.swapRate}>
-                        1 KARMA = {karmaPrice.toFixed(4)} SOL
-                        {(() => {
-                          const pa = swapDir === "buy" ? (state.lpSol + swapIn) / (state.lpKarma - swapOut) : (state.lpSol - swapOut) / (state.lpKarma + swapIn);
-                          const impact = ((pa - karmaPrice) / karmaPrice * 100);
-                          return <span className={impact > 0 ? styles.impactUp : styles.impactDown}> · Impact: {impact > 0 ? "+" : ""}{impact.toFixed(2)}%</span>;
-                        })()}
-                      </div>
-                    )}
-                    <button className={styles.btn} onClick={() => swapDir === "buy" ? swapBuy(swapIn) : swapSell(swapIn)} disabled={anyLoading || swapIn <= 0}>
-                      {anyLoading ? "Processing..." : swapDir === "buy" ? "Buy KARMA" : "Sell KARMA"}
-                    </button>
-                  </>
-                )}
-              </>
-            )}
+                  )}
+                  <button className={styles.btn} onClick={() => swapDir === "buy" ? swapBuy(swapIn) : swapSell(swapIn)} disabled={anyLoading || swapIn <= 0}>
+                    {anyLoading ? "Processing..." : swapDir === "buy" ? "Buy KARMA" : "Sell KARMA"}
+                  </button>
+                </>)}
+              </>)}
 
-            {/* ── MINT TAB ── */}
-            {activeTab === "mint" && (
-              <>
+              {activeTab === "mint" && (<>
                 <div className={styles.desc}>Stake SOL to earn Karma. Yield goes to you as KARMA + SOL added to LP.</div>
-                {!wallet.connected ? <div className={styles.hint}>Connect wallet to mint</div> : (
-                  <>
-                    <div className={styles.inputRow}>
-                      <input type="number" value={stakeAmt} onChange={e => setStakeAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
-                      <span className={styles.inputUnit}>SOL</span>
-                    </div>
-                    {stakeIn > 0 && <div className={styles.estimate}>≈ {(weeklyYieldSol / karmaPrice).toFixed(6)} KARMA / week</div>}
-                    <button className={styles.btn} onClick={() => deposit(stakeIn)} disabled={anyLoading || stakeIn <= 0}>
-                      {anyLoading ? "Processing..." : `Stake ${stakeAmt} SOL`}
-                    </button>
-                    <div className={styles.rentNote}>A small rent fee (~0.00145 SOL) is collected to create your stake account. This is fully returned when you withdraw.</div>
-                  </>
-                )}
+                {!wallet.connected ? <div className={styles.hint}>Connect wallet to mint</div> : (<>
+                  <div className={styles.inputRow}>
+                    <input type="number" value={stakeAmt} onChange={e => setStakeAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
+                    <span className={styles.inputUnit}>SOL</span>
+                  </div>
+                  {stakeIn > 0 && <div className={styles.estimate}>≈ {(weeklyYieldSol / karmaPrice).toFixed(6)} KARMA / week</div>}
+                  <button className={styles.btn} onClick={() => deposit(stakeIn)} disabled={anyLoading || stakeIn <= 0}>{anyLoading ? "Processing..." : `Stake ${stakeAmt} SOL`}</button>
+                  <div className={styles.rentNote}>A small rent fee (~0.00145 SOL) is collected to create your stake account. This is fully returned when you withdraw.</div>
+                </>)}
                 {wallet.connected && userStake && (
-                  <div className={styles.subsection}>
-                    <Collapsible title="Your Stake" defaultOpen={true}>
-                      <div className={styles.posRow}><span>SOL deposited</span><span className={styles.bold}>{fmt(userStake.solDeposited)}</span></div>
-                      <div className={styles.posRow}><span>Claimable yield</span><span className={styles.green}>{claimableKarma < 0.000001 ? "<0.000001" : claimableKarma.toFixed(6)} KARMA</span></div>
-                      <div className={styles.btnRow}>
-                        <button className={styles.btn} onClick={() => claimYield(currentSolValue)} disabled={anyLoading || claimable <= 0}>Claim KARMA</button>
-                        <button className={styles.btnSecondary} onClick={() => withdraw(userStake.jitosolShare, currentSolValue)} disabled={anyLoading}>Withdraw SOL</button>
-                      </div>
-                    </Collapsible>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* ── SUPPLY TAB ── */}
-            {activeTab === "supply" && (
-              <>
-                {!wallet.connected ? <div className={styles.hint}>Connect wallet to supply</div> : (
-                  <>
-                    <div className={styles.inputRow}>
-                      <input type="number" value={supplyAmt} onChange={e => setSupplyAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
-                      <span className={styles.inputUnit}>SOL</span>
+                  <div className={styles.subsection}><Collapsible title="Your Stake" defaultOpen={true}>
+                    <div className={styles.posRow}><span>SOL deposited</span><span className={styles.bold}>{fmt(userStake.solDeposited)}</span></div>
+                    <div className={styles.posRow}><span>Claimable yield</span><span className={styles.green}>{claimableKarma < 0.000001 ? "<0.000001" : claimableKarma.toFixed(6)} KARMA</span></div>
+                    <div className={styles.btnRow}>
+                      <button className={styles.btn} onClick={() => claimYield(currentSolValue)} disabled={anyLoading || claimable <= 0}>Claim KARMA</button>
+                      <button className={styles.btnSecondary} onClick={() => withdraw(userStake.jitosolShare, currentSolValue)} disabled={anyLoading}>Withdraw SOL</button>
                     </div>
-                    <button className={styles.btn} onClick={() => supplyDeposit(supplyIn)} disabled={anyLoading || supplyIn <= 0}>
-                      {anyLoading ? "Processing..." : `Stake ${supplyAmt} SOL`}
-                    </button>
-                    <div className={styles.rentNote}>A small rent fee (~0.00145 SOL) is collected to open your position. This is fully returned when you close it.</div>
-                  </>
+                  </Collapsible></div>
                 )}
+              </>)}
+
+              {activeTab === "supply" && (<>
+                {!wallet.connected ? <div className={styles.hint}>Connect wallet to supply</div> : (<>
+                  <div className={styles.inputRow}>
+                    <input type="number" value={supplyAmt} onChange={e => setSupplyAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
+                    <span className={styles.inputUnit}>SOL</span>
+                  </div>
+                  <button className={styles.btn} onClick={() => supplyDeposit(supplyIn)} disabled={anyLoading || supplyIn <= 0}>{anyLoading ? "Processing..." : `Stake ${supplyAmt} SOL`}</button>
+                  <div className={styles.rentNote}>A small rent fee (~0.00145 SOL) is collected to open your position. This is fully returned when you close it.</div>
+                </>)}
                 {wallet.connected && supplyUserStake && (
-                  <div className={styles.subsection}>
-                    <Collapsible title="Your Supply Stake" defaultOpen={true}>
-                      <div className={styles.posRow}><span>SOL deposited</span><span className={styles.bold}>{fmt(supplyUserStake.karmaDeposited)}</span></div>
-                      <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(supClaimable)}</span></div>
-                      <div className={styles.btnRowHalf}>
-                        <button className={styles.btnSmall} onClick={() => supplyClaim(supCurrentSolValue)} disabled={anyLoading || supClaimable <= 0}>Supply</button>
-                        <button className={styles.btnSecondarySmall} onClick={() => supplyWithdraw(supplyUserStake.jitosolShare, supCurrentSolValue)} disabled={anyLoading}>Withdraw SOL</button>
-                      </div>
-                    </Collapsible>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* ── DEFLATE TAB ── */}
-            {activeTab === "deflate" && (
-              <>
-                {!wallet.connected ? <div className={styles.hint}>Connect wallet to deflate</div> : (
-                  <>
-                    <div className={styles.inputRow}>
-                      <input type="number" value={deflateAmt} onChange={e => setDeflateAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
-                      <span className={styles.inputUnit}>KARMA</span>
+                  <div className={styles.subsection}><Collapsible title="Your Supply Stake" defaultOpen={true}>
+                    <div className={styles.posRow}><span>SOL deposited</span><span className={styles.bold}>{fmt(supplyUserStake.karmaDeposited)}</span></div>
+                    <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(supClaimable)}</span></div>
+                    <div className={styles.btnRowHalf}>
+                      <button className={styles.btnSmall} onClick={() => supplyClaim(supCurrentSolValue)} disabled={anyLoading || supClaimable <= 0}>Supply</button>
+                      <button className={styles.btnSecondarySmall} onClick={() => supplyWithdraw(supplyUserStake.jitosolShare, supCurrentSolValue)} disabled={anyLoading}>Withdraw SOL</button>
                     </div>
-                    <button className={styles.btn} onClick={() => deflateDeposit(deflateIn)} disabled={anyLoading || deflateIn <= 0}>
-                      {anyLoading ? "Processing..." : `Stake ${deflateAmt} KARMA`}
-                    </button>
-                    <div className={styles.rentNote}>A small rent fee (~0.00145 SOL) is collected to open your position. This is fully returned when you close it.</div>
-                  </>
+                  </Collapsible></div>
                 )}
-                {wallet.connected && deflateUserStake && (
-                  <div className={styles.subsection}>
-                    <Collapsible title="Your Deflate Stake" defaultOpen={true}>
-                      <div className={styles.posRow}><span>KARMA deposited</span><span className={styles.bold}>{deflateUserStake.karmaDeposited.toFixed(4)} KARMA</span></div>
-                      <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(defClaimable)}</span></div>
-                      <div className={styles.btnRowHalf}>
-                        <button className={styles.btnSmall} onClick={() => deflateClaim(defCurrentSolValue)} disabled={anyLoading || defClaimable <= 0}>Deflate</button>
-                        <button className={styles.btnSecondarySmall} onClick={() => deflateWithdraw(deflateUserStake.jitosolShare, deflateUserStake.karmaDeposited, defCurrentSolValue)} disabled={anyLoading}>Withdraw KARMA</button>
-                      </div>
-                    </Collapsible>
+              </>)}
+
+              {activeTab === "deflate" && (<>
+                {!wallet.connected ? <div className={styles.hint}>Connect wallet to deflate</div> : (<>
+                  <div className={styles.inputRow}>
+                    <input type="number" value={deflateAmt} onChange={e => setDeflateAmt(e.target.value)} min="0.01" step="0.1" className={styles.input} />
+                    <span className={styles.inputUnit}>KARMA</span>
                   </div>
+                  <button className={styles.btn} onClick={() => deflateDeposit(deflateIn)} disabled={anyLoading || deflateIn <= 0}>{anyLoading ? "Processing..." : `Stake ${deflateAmt} KARMA`}</button>
+                  <div className={styles.rentNote}>A small rent fee (~0.00145 SOL) is collected to open your position. This is fully returned when you close it.</div>
+                </>)}
+                {wallet.connected && deflateUserStake && (
+                  <div className={styles.subsection}><Collapsible title="Your Deflate Stake" defaultOpen={true}>
+                    <div className={styles.posRow}><span>KARMA deposited</span><span className={styles.bold}>{deflateUserStake.karmaDeposited.toFixed(4)} KARMA</span></div>
+                    <div className={styles.posRow}><span>Yield earned (to LP)</span><span className={styles.green}>{fmt(defClaimable)}</span></div>
+                    <div className={styles.btnRowHalf}>
+                      <button className={styles.btnSmall} onClick={() => deflateClaim(defCurrentSolValue)} disabled={anyLoading || defClaimable <= 0}>Deflate</button>
+                      <button className={styles.btnSecondarySmall} onClick={() => deflateWithdraw(deflateUserStake.jitosolShare, deflateUserStake.karmaDeposited, defCurrentSolValue)} disabled={anyLoading}>Withdraw KARMA</button>
+                    </div>
+                  </Collapsible></div>
                 )}
-              </>
+              </>)}
+            </div>
+
+            {/* ── LAST TX BAR ── */}
+            {wallet.connected && lastTx && (
+              <div className={styles.lastTxBar}>
+                <span className={styles.lastTxLabel}>Last tx:</span>
+                <span className={styles.lastTxTime}>{fmtTime(lastTx.time)}</span>
+                <a href={`https://solscan.io/tx/${lastTx.sig}`} target="_blank" rel="noopener noreferrer" className={styles.lastTxLink}>{lastTx.sig.slice(0, 16)}...{lastTx.sig.slice(-8)} ↗</a>
+              </div>
             )}
-          </div>
+          </>)}
 
           {/* ── divider ── */}
           <div className={styles.sectionDivider} />
@@ -311,73 +305,48 @@ export default function HomePage() {
               <div className={styles.posRow}><span>KARMA price</span><span className={styles.bold}>{fmt(karmaPrice)}</span></div>
               <div className={styles.posRow}><span>Market cap</span><span className={styles.bold}>{fmt(totalSupply * karmaPrice, 2)}</span></div>
               <div className={styles.posRow}><span>Holders</span><span className={styles.bold}>{holders}</span></div>
-              <div className={styles.subsection}>
-                <Collapsible title="Mint Pool" defaultOpen={true}>
-                  <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(state.totalSolDeposited, 2)}</span></div>
-                  <div className={styles.posRow}><span>Stakers</span><span>{state.totalStakers}</span></div>
-                  <div className={styles.posRow}><span>Karma minted</span><span className={styles.green}>{totalKarmaMinted.toFixed(4)} KARMA</span></div>
-                </Collapsible>
-              </div>
-              {deflateState && (
-                <div className={styles.subsection}>
-                  <Collapsible title="Deflation Pool" defaultOpen={true}>
-                    <div className={styles.posRow}><span>Total KARMA staked</span><span>{deflateState.totalKarmaDeposited.toFixed(4)} KARMA</span></div>
-                    <div className={styles.posRow}><span>Stakers</span><span>{deflateState.totalStakers}</span></div>
-                    <div className={styles.posRow}><span>Supply reduced</span><span className={styles.green}>{deflateSupplyReduced.toFixed(4)} KARMA</span></div>
-                  </Collapsible>
-                </div>
-              )}
-              {supplyState && (
-                <div className={styles.subsection}>
-                  <Collapsible title="Supply Pool" defaultOpen={true}>
-                    <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(supplyState.totalSolDeposited)}</span></div>
-                    <div className={styles.posRow}><span>Stakers</span><span>{supplyState.totalStakers}</span></div>
-                    <div className={styles.posRow}><span>LP added</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)} + {supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
-                  </Collapsible>
-                </div>
-              )}
-              <div className={styles.subsection}>
-                <Collapsible title="Liquidity Pool" defaultOpen={true}>
-                  <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
-                  <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
-                </Collapsible>
-              </div>
-              <div className={styles.subsection}>
-                <Collapsible title="Supply Distribution" defaultOpen={true}>
-                  {(() => {
-                    const lpK = state.lpKarma;
-                    const stakedK = deflateState ? deflateState.totalKarmaDeposited : 0;
-                    // Staked KARMA was sold into LP, so it's already counted in lpK
-                    // Holders = total supply - LP karma (which includes staked)
-                    const holdersK = Math.max(0, totalSupply - lpK);
-                    const lpOnlyK = Math.max(0, lpK - stakedK); // LP minus staked portion
-                    const lpPct = totalSupply > 0 ? (lpOnlyK / totalSupply * 100) : 0;
-                    const holdersPct = totalSupply > 0 ? (holdersK / totalSupply * 100) : 0;
-                    const stakedPct = totalSupply > 0 ? (stakedK / totalSupply * 100) : 0;
-                    return (<>
-                      <div className={styles.posRow}><span>In holder wallets</span><span>{holdersK.toFixed(4)} KARMA <span className={styles.pct}>({holdersPct.toFixed(1)}%)</span></span></div>
-                      <div className={styles.posRow}><span>In liquidity pool</span><span>{lpOnlyK.toFixed(4)} KARMA <span className={styles.pct}>({lpPct.toFixed(1)}%)</span></span></div>
-                      <div className={styles.posRow}><span>Karma staked</span><span>{stakedK.toFixed(4)} KARMA <span className={styles.pct}>({stakedPct.toFixed(1)}%)</span></span></div>
-                      {totalSupply > 0 && (
-                        <div className={styles.bar}>
-                          <div className={styles.barFillHolders} style={{ width: `${holdersPct}%` }} />
-                          <div className={styles.barFillLP} style={{ width: `${lpPct}%` }} />
-                          <div className={styles.barFillStaked} style={{ width: `${stakedPct}%` }} />
-                        </div>
-                      )}
-                      <div className={styles.legend}><span><span className={styles.dotHolders} /> Holders</span><span><span className={styles.dotLP} /> LP</span><span><span className={styles.dotStaked} /> Staked</span></div>
-                    </>);
-                  })()}
-                </Collapsible>
-              </div>
+              <div className={styles.subsection}><Collapsible title="Mint Pool" defaultOpen={true}>
+                <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(state.totalSolDeposited, 2)}</span></div>
+                <div className={styles.posRow}><span>Stakers</span><span>{state.totalStakers}</span></div>
+                <div className={styles.posRow}><span>Karma minted</span><span className={styles.green}>{totalKarmaMinted.toFixed(4)} KARMA</span></div>
+              </Collapsible></div>
+              {deflateState && (<div className={styles.subsection}><Collapsible title="Deflation Pool" defaultOpen={true}>
+                <div className={styles.posRow}><span>Total KARMA staked</span><span>{deflateState.totalKarmaDeposited.toFixed(4)} KARMA</span></div>
+                <div className={styles.posRow}><span>Stakers</span><span>{deflateState.totalStakers}</span></div>
+                <div className={styles.posRow}><span>Supply reduced</span><span className={styles.green}>{deflateSupplyReduced.toFixed(4)} KARMA</span></div>
+              </Collapsible></div>)}
+              {supplyState && (<div className={styles.subsection}><Collapsible title="Supply Pool" defaultOpen={true}>
+                <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(supplyState.totalSolDeposited)}</span></div>
+                <div className={styles.posRow}><span>Stakers</span><span>{supplyState.totalStakers}</span></div>
+                <div className={styles.posRow}><span>LP added</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)} + {supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
+              </Collapsible></div>)}
+              <div className={styles.subsection}><Collapsible title="Liquidity Pool" defaultOpen={true}>
+                <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
+                <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
+              </Collapsible></div>
+              <div className={styles.subsection}><Collapsible title="Supply Distribution" defaultOpen={true}>
+                {(() => {
+                  const lpK = state.lpKarma;
+                  const stakedK = deflateState ? deflateState.totalKarmaDeposited : 0;
+                  const holdersK = Math.max(0, totalSupply - lpK);
+                  const lpOnlyK = Math.max(0, lpK - stakedK);
+                  const lpPct = totalSupply > 0 ? (lpOnlyK / totalSupply * 100) : 0;
+                  const holdersPct = totalSupply > 0 ? (holdersK / totalSupply * 100) : 0;
+                  const stakedPct = totalSupply > 0 ? (stakedK / totalSupply * 100) : 0;
+                  return (<>
+                    <div className={styles.posRow}><span>In holder wallets</span><span>{holdersK.toFixed(4)} KARMA <span className={styles.pct}>({holdersPct.toFixed(1)}%)</span></span></div>
+                    <div className={styles.posRow}><span>In liquidity pool</span><span>{lpOnlyK.toFixed(4)} KARMA <span className={styles.pct}>({lpPct.toFixed(1)}%)</span></span></div>
+                    <div className={styles.posRow}><span>Karma staked</span><span>{stakedK.toFixed(4)} KARMA <span className={styles.pct}>({stakedPct.toFixed(1)}%)</span></span></div>
+                    {totalSupply > 0 && (<div className={styles.bar}><div className={styles.barFillHolders} style={{ width: `${holdersPct}%` }} /><div className={styles.barFillLP} style={{ width: `${lpPct}%` }} /><div className={styles.barFillStaked} style={{ width: `${stakedPct}%` }} /></div>)}
+                    <div className={styles.legend}><span><span className={styles.dotHolders} /> Holders</span><span><span className={styles.dotLP} /> LP</span><span><span className={styles.dotStaked} /> Staked</span></div>
+                  </>);
+                })()}
+              </Collapsible></div>
             </Collapsible>
           </div>
 
           {/* ── GRAPH ── */}
           <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
-
-          {/* ── TRADES ── */}
-          <Trades />
 
           {/* ── divider ── */}
           <div className={styles.sectionDivider} />
@@ -397,7 +366,6 @@ export default function HomePage() {
       ) : (
         <div className={styles.loading}>Protocol not initialized</div>
       )}
-
       <footer className={styles.footer}>Karma — Sound money on Solana</footer>
     </>
   );

@@ -24,14 +24,23 @@
 .mainTab { flex: 1; padding: 9px 4px; border-radius: 8px; border: none; background: transparent; color: #666; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; text-transform: uppercase; letter-spacing: 0.3px; transition: all 0.15s; }
 .mainTabActive { background: #8b5cf6; color: #fff; }
 
-.toolbar { display: flex; justify-content: flex-start; gap: 8px; padding: 8px 0 6px; }
-.welcomeChip { position: relative; padding: 6px 12px; border-radius: 8px; background: transparent; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+.toolbar { display: flex; justify-content: flex-start; align-items: center; gap: 6px; padding: 8px 0 6px; }
+.welcomeChip { position: relative; padding: 6px 8px; border-radius: 8px; background: transparent; border: none; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; }
 .welcomeChipHover { background: #8b5cf620; }
 .welcomeIcon { flex-shrink: 0; opacity: 0.7; transition: opacity 0.2s; }
 .welcomeChipHover .welcomeIcon { opacity: 1; }
 .welcomeTooltip { position: absolute; top: calc(100% + 8px); left: 0; width: 300px; background: #1a1a25; border: 1px solid #2a2a3a; border-radius: 10px; padding: 14px 16px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
 .welcomeTooltipTitle { font-size: 14px; font-weight: 700; color: #e8e8ea; margin-bottom: 6px; }
 .welcomeTooltip p { font-size: 12px; color: #999; line-height: 1.6; margin: 0; }
+.kCoinBtn { padding: 4px; border-radius: 8px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; transition: all 0.15s; opacity: 0.7; }
+.kCoinBtn:hover { opacity: 1; }
+.kCoinActive { opacity: 1; }
+
+.lastTxBar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
+.lastTxLabel { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.3px; }
+.lastTxTime { font-size: 10px; color: #666; }
+.lastTxLink { font-size: 11px; color: #8b5cf6; text-decoration: none; font-family: monospace; margin-left: auto; }
+.lastTxLink:hover { text-decoration: underline; }
 
 .priceRow { display: flex; align-items: baseline; gap: 6px; margin-bottom: 16px; }
 .priceBig { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
