@@ -7,6 +7,7 @@ import { getJitosolRate } from "@/utils/jupiter";
 import { useKarma } from "@/hooks/useKarma";
 import { useSettings } from "@/contexts/Settings";
 import PriceChart from "@/components/PriceChart";
+import Trades from "@/components/Trades";
 import Profile from "@/components/Profile";
 import DevLog from "@/components/DevLog";
 import Collapsible from "@/components/Collapsible";
@@ -99,6 +100,15 @@ export default function HomePage() {
 
       {pageLoading ? <div className={styles.loading}>Loading...</div> : state ? (
         <>
+          {/* ── WELCOME ── */}
+          <div className={styles.welcome}>
+            <div className={styles.welcomeTitle}>Welcome to Karma</div>
+            <p className={styles.welcomeText}>
+              Karma is a store of value token built on Solana and backed 1:1 by SOL. Karma can be minted, and deflated (burned) by you. Stake SOL to mint — or deflate Karma and withdraw your full deposit at anytime. Or swap SOL for Karma directly with our own liquidity pools.
+            </p>
+          </div>
+          <div className={styles.sectionDivider} />
+
           {/* ── SWAP ── */}
           <div className={styles.panel}>
             <Collapsible title="Swap" defaultOpen={true} accent>
@@ -164,6 +174,9 @@ export default function HomePage() {
           {/* ── GRAPH ── */}
           <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
 
+          {/* ── TRADES ── */}
+          <Trades />
+
           {/* ── TOKENOMICS ── */}
           <div className={styles.panel}>
             <Collapsible title="Karma Tokenomics" defaultOpen={true} accent>
@@ -171,7 +184,6 @@ export default function HomePage() {
               <div className={styles.posRow}><span>KARMA price</span><span className={styles.bold}>{fmt(karmaPrice)}</span></div>
               <div className={styles.posRow}><span>Market cap</span><span className={styles.bold}>{fmt(totalSupply * karmaPrice, 2)}</span></div>
               <div className={styles.posRow}><span>Holders</span><span className={styles.bold}>{holders}</span></div>
-
               <div className={styles.subsection}>
                 <Collapsible title="Minting" defaultOpen={true}>
                   <div className={styles.posRow}><span>Total SOL staked</span><span className={styles.bold}>{fmt(state.totalSolDeposited, 2)}</span></div>
@@ -180,14 +192,12 @@ export default function HomePage() {
                   <div className={styles.posRow}><span>Yield APY</span><span>~7.5%</span></div>
                 </Collapsible>
               </div>
-
               <div className={styles.subsection}>
                 <Collapsible title="Liquidity Pool" defaultOpen={true}>
                   <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
                   <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
                 </Collapsible>
               </div>
-
               <div className={styles.subsection}>
                 <Collapsible title="Supply Distribution" defaultOpen={true}>
                   {(() => {
@@ -202,15 +212,9 @@ export default function HomePage() {
                       <div className={styles.posRow}><span>In liquidity pool</span><span>{lpKarma.toFixed(4)} KARMA <span className={styles.pct}>({lpPct.toFixed(1)}%)</span></span></div>
                       <div className={styles.posRow}><span>Pending yield (est. daily)</span><span className={styles.muted}>{pendingKarma.toFixed(6)} KARMA</span></div>
                       {totalSupply > 0 && (
-                        <div className={styles.bar}>
-                          <div className={styles.barFillHolders} style={{ width: `${holdersPct}%` }} />
-                          <div className={styles.barFillLP} style={{ width: `${lpPct}%` }} />
-                        </div>
+                        <div className={styles.bar}><div className={styles.barFillHolders} style={{ width: `${holdersPct}%` }} /><div className={styles.barFillLP} style={{ width: `${lpPct}%` }} /></div>
                       )}
-                      <div className={styles.legend}>
-                        <span><span className={styles.dotHolders} /> Holders</span>
-                        <span><span className={styles.dotLP} /> LP</span>
-                      </div>
+                      <div className={styles.legend}><span><span className={styles.dotHolders} /> Holders</span><span><span className={styles.dotLP} /> LP</span></div>
                     </>);
                   })()}
                 </Collapsible>

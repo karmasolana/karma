@@ -17,6 +17,10 @@
 
 .panel { padding: 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
 
+.welcome { padding: 20px 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 0; }
+.welcomeTitle { font-size: 16px; font-weight: 800; color: #e8e8ea; margin-bottom: 8px; }
+.welcomeText { font-size: 13px; color: #999; line-height: 1.6; }
+
 .priceRow { display: flex; align-items: baseline; gap: 6px; margin-bottom: 16px; }
 .priceBig { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
 .priceSlash { font-size: 20px; color: #444; font-weight: 300; }
