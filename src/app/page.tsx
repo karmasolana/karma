@@ -7,8 +7,8 @@ import { getJitosolRate } from "@/utils/jupiter";
 import { useKarma } from "@/hooks/useKarma";
 import { useSettings } from "@/contexts/Settings";
 import PriceChart from "@/components/PriceChart";
-import Transactions from "@/components/Transactions";
 import Profile from "@/components/Profile";
+import DevLog from "@/components/DevLog";
 import Collapsible from "@/components/Collapsible";
 import styles from "./page.module.css";
 
@@ -99,9 +99,6 @@ export default function HomePage() {
 
       {pageLoading ? <div className={styles.loading}>Loading...</div> : state ? (
         <>
-          {/* ── PRICE CHART (first) ── */}
-          <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
-
           {/* ── SWAP ── */}
           <div className={styles.panel}>
             <Collapsible title="Swap" defaultOpen={true} accent>
@@ -128,9 +125,6 @@ export default function HomePage() {
               )}
             </Collapsible>
           </div>
-
-          {/* ── TRANSACTIONS ── */}
-          <Transactions />
 
           {/* ── MINT KARMA ── */}
           <div className={styles.panel}>
@@ -164,6 +158,12 @@ export default function HomePage() {
             </Collapsible>
           </div>
 
+          {/* ── divider ── */}
+          <div className={styles.sectionDivider} />
+
+          {/* ── GRAPH ── */}
+          <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
+
           {/* ── TOKENOMICS ── */}
           <div className={styles.panel}>
             <Collapsible title="Karma Tokenomics" defaultOpen={true} accent>
@@ -195,9 +195,7 @@ export default function HomePage() {
                     const holdersKarma = Math.max(0, totalSupply - lpKarma);
                     const lpPct = totalSupply > 0 ? (lpKarma / totalSupply * 100) : 0;
                     const holdersPct = totalSupply > 0 ? (holdersKarma / totalSupply * 100) : 0;
-                    // Pending yield: SOL staked * time since last global claim estimate
-                    // This is approximate - real yield is in jitoSOL appreciation
-                    const pendingYieldSol = state.totalSolDeposited * APY / 365; // rough daily
+                    const pendingYieldSol = state.totalSolDeposited * APY / 365;
                     const pendingKarma = karmaPrice > 0 ? pendingYieldSol / karmaPrice : 0;
                     return (<>
                       <div className={styles.posRow}><span>In holder wallets</span><span>{holdersKarma.toFixed(4)} KARMA <span className={styles.pct}>({holdersPct.toFixed(1)}%)</span></span></div>
@@ -220,8 +218,17 @@ export default function HomePage() {
             </Collapsible>
           </div>
 
-          {/* ── PROFILE (last) ── */}
+          {/* ── divider ── */}
+          <div className={styles.sectionDivider} />
+
+          {/* ── PROFILE ── */}
           <Profile karmaPrice={karmaPrice} solPrice={solPrice} claimYield={claimYield} loading={loading} currentSolValue={currentSolValue} claimable={claimable} userStake={userStake} />
+
+          {/* ── divider ── */}
+          <div className={styles.sectionDivider} />
+
+          {/* ── DEV LOG ── */}
+          <DevLog />
 
           {error && <div className={styles.error}>{error} <button className={styles.dismiss} onClick={() => setError(null)}>✕</button></div>}
           {txSig && <div className={styles.success}>TX: {txSig.slice(0, 20)}... ✓</div>}

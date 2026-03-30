@@ -76,7 +76,7 @@ export default function PriceChart({ karmaPrice, solPrice }: { karmaPrice: numbe
     ctx.fillText(mode === "USD" ? `$${prices[0].toFixed(2)}` : `${prices[0].toFixed(4)}`, 4, 12);
   }, [history, mode, solPrice]);
 
-  const title = mode === "USD" ? "KARMA to USD" : "KARMA to SOL";
+  const title = "Graph";
 
   return (
     <div className={styles.wrap}>
