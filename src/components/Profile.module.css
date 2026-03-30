@@ -1,13 +1,40 @@
 .wrap { padding: 18px; border-radius: 14px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
-.address { font-size: 11px; color: #555; font-family: monospace; margin-bottom: 12px; }
+.headerRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.addressRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.username { font-size: 14px; font-weight: 700; color: #e8e8ea; }
+.address { font-size: 12px; color: #666; font-family: monospace; }
+.xLink { font-size: 11px; color: #8b5cf6; text-decoration: none; }
+.xLink:hover { text-decoration: underline; }
+.editIcon { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #2a2a3a; background: transparent; color: #666; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.editIcon:hover { border-color: #8b5cf6; color: #8b5cf6; }
+
+.editForm { margin-bottom: 14px; padding: 12px; background: #1a1a25; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; }
+.editInput { padding: 8px 12px; border-radius: 6px; border: 1px solid #2a2a3a; background: #0d0d14; color: #e8e8ea; font-size: 13px; font-family: inherit; outline: none; }
+.editInput:focus { border-color: #8b5cf6; }
+.editActions { display: flex; gap: 8px; }
+.saveBtn { flex: 1; padding: 8px; border-radius: 6px; border: none; background: #8b5cf6; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.cancelBtn { padding: 8px 14px; border-radius: 6px; border: 1px solid #2a2a3a; background: transparent; color: #888; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tab { flex: 1; padding: 7px; border-radius: 6px; border: 1px solid #2a2a3a; background: transparent; color: #666; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; text-transform: uppercase; letter-spacing: 0.3px; }
+.tabActive { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+
 .row { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 4px 0; }
 .bold { font-weight: 700; color: #e8e8ea; }
-.accent { font-weight: 700; color: #8b5cf6; }
 .green { color: #22c55e; font-weight: 600; }
 .red { color: #ef4444; font-weight: 600; }
-.divider { height: 1px; background: #222230; margin: 8px 0; }
-.sub { margin-top: 14px; padding-top: 12px; border-top: 1px solid #222230; }
-.claimBtn { width: 100%; padding: 10px; border-radius: 8px; border: none; background: #8b5cf6; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 10px; transition: opacity 0.15s; }
-.claimBtn:hover { opacity: 0.9; }
+.muted { color: #555; font-size: 12px; }
+.divider { height: 1px; background: #222230; margin: 10px 0; }
+.sub { margin-top: 12px; padding-top: 10px; border-top: 1px solid #222230; }
+.empty { font-size: 12px; color: #444; text-align: center; padding: 6px; }
+.claimBtn { width: 100%; padding: 8px; border-radius: 8px; border: none; background: #8b5cf6; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 8px; }
 .claimBtn:disabled { opacity: 0.4; cursor: not-allowed; }
-.empty { font-size: 12px; color: #555; text-align: center; padding: 8px; }
+
+.achGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.achCard { padding: 12px; border-radius: 8px; text-align: center; }
+.achEarned { background: #8b5cf615; border: 1px solid #8b5cf630; }
+.achLocked { background: #1a1a25; border: 1px solid #222230; opacity: 0.5; }
+.achIcon { font-size: 18px; margin-bottom: 4px; color: #8b5cf6; }
+.achLocked .achIcon { color: #444; }
+.achName { font-size: 11px; font-weight: 700; color: #e8e8ea; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+.achDesc { font-size: 10px; color: #888; }

@@ -156,7 +156,7 @@ export default function HomePage() {
 
           {/* ── SWAP (non-collapsible) ── */}
           <div className={styles.panel}>
-            <Collapsible title="Swap" defaultOpen={true} accent collapsible={false} tooltip="Swap between Sol and Karma for no fees">
+            <Collapsible title="Swap" defaultOpen={true} accent tooltip="Swap between Sol and Karma for no fees">
               <div className={styles.priceRow}>
                 <span className={styles.priceBig}>{karmaPrice.toFixed(4)} SOL</span>
                 <span className={styles.priceSlash}>/</span>
@@ -363,7 +363,7 @@ export default function HomePage() {
           <div className={styles.sectionDivider} />
 
           {/* ── PROFILE ── */}
-          <Profile karmaPrice={karmaPrice} solPrice={solPrice} claimYield={claimYield} loading={anyLoading} currentSolValue={currentSolValue} claimable={claimable} userStake={userStake} />
+          <Profile karmaPrice={karmaPrice} solPrice={solPrice} claimYield={claimYield} loading={anyLoading} currentSolValue={currentSolValue} claimable={claimable} userStake={userStake} deflateUserStake={deflateUserStake} supplyUserStake={supplyUserStake} />
 
           {/* ── divider ── */}
           <div className={styles.sectionDivider} />
