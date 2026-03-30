@@ -24,6 +24,14 @@ function disc(name: string): Buffer {
   return Buffer.from(map[name]);
 }
 
+// Confirm a transaction AND verify it succeeded on-chain. Throws if failed.
+async function confirmAndVerify(connection: any, sig: string, label: string) {
+  const result = await connection.confirmTransaction(sig, "confirmed");
+  if (result.value.err) {
+    throw new Error(`${label} failed on-chain: ${JSON.stringify(result.value.err)}`);
+  }
+}
+
 export function useKarma() {
   const { connection } = useConnection();
   const wallet = useWallet();
@@ -55,7 +63,7 @@ export function useKarma() {
       try { swapTx = VersionedTransaction.deserialize(swapTxBuf); } catch { throw new Error("Failed to deserialize Jupiter swap"); }
       const signedSwap = await wallet.signTransaction(swapTx);
       const swapSig = await connection.sendRawTransaction(signedSwap.serialize());
-      await connection.confirmTransaction(swapSig, "confirmed");
+      await confirmAndVerify(connection, swapSig, "Jupiter swap");
 
       // Step 2: Read actual jitoSOL balance after swap
       await new Promise(r => setTimeout(r, 2000)); // brief delay for state to settle
@@ -168,7 +176,7 @@ export function useKarma() {
       });
 
       const sig1 = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig1, "confirmed");
+      await confirmAndVerify(connection, sig1, "Withdraw");
 
       // Step 2: Swap jitoSOL → SOL via Jupiter
       const jitoLamports = Math.floor(jitosolShare * 1e9);
@@ -176,7 +184,7 @@ export function useKarma() {
       const swapTx = VersionedTransaction.deserialize(Buffer.from(swapTxBase64, "base64"));
       const signedSwap = await wallet.signTransaction(swapTx);
       const sig2 = await connection.sendRawTransaction(signedSwap.serialize());
-      await connection.confirmTransaction(sig2, "confirmed");
+      await confirmAndVerify(connection, sig2, "Jupiter swap");
 
       setTxSig(sig2);
     } catch (e: any) { setError(e.message || "Withdraw failed"); }
@@ -292,25 +300,23 @@ export function useDeflatePool() {
         data: Buffer.concat([disc("swap_karma_to_sol"), karmaBuf]),
       });
       const sellSig = await wallet.sendTransaction(sellTx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sellSig, "confirmed");
+      await confirmAndVerify(connection, sellSig, "KARMA sell");
+      // Verify tx actually succeeded on-chain
 
       // Step 3: Check how much SOL we got
       await new Promise(r => setTimeout(r, 2000));
       const solAfter = await connection.getBalance(wallet.publicKey);
-      // solReceived includes tx fee deduction, so use absolute value of the LP SOL output
-      // Better approach: calculate expected SOL from the LP math
       const solReceived = solAfter - solBefore;
-      // If net is negative (fees > tiny sol received), we need to use absolute expected from LP
-      // For now, use the actual SOL balance minus fees buffer
-      const solForSwap = solReceived > 50000 ? solReceived - 20000 : Math.floor(karmaAmount * 0.8 * LAMPORTS_PER_SOL); // fallback estimate
-      if (solForSwap < 5000) throw new Error(`KARMA sell returned too little SOL (net: ${solReceived} lamports). Try a larger amount.`);
+      if (solReceived <= 0) throw new Error("KARMA sell did not return SOL. Transaction may have failed.");
+      const solForSwap = solReceived - 20000; // leave buffer for fees
+      if (solForSwap < 5000) throw new Error("SOL received from KARMA sell too small for Jupiter swap");
 
       // Step 4: Swap SOL → jitoSOL via Jupiter
       const swapTxBase64 = await getSwapTransaction(wallet.publicKey.toBase58(), solForSwap);
       const swapTx = VersionedTransaction.deserialize(Buffer.from(swapTxBase64, "base64"));
       const signedSwap = await wallet.signTransaction(swapTx);
       const swapSig = await connection.sendRawTransaction(signedSwap.serialize());
-      await connection.confirmTransaction(swapSig, "confirmed");
+      await confirmAndVerify(connection, swapSig, "Jupiter swap");
 
       // Step 5: Read actual jitoSOL received
       await new Promise(r => setTimeout(r, 2000));
@@ -407,7 +413,7 @@ export function useDeflatePool() {
         data: Buffer.concat([disc("deflate_withdraw"), valueBuf]),
       });
       const sig1 = await wallet.sendTransaction(tx1, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig1, "confirmed");
+      await confirmAndVerify(connection, sig1, "Withdraw");
 
       // Step 2: Record SOL before Jupiter swap
       const solBeforeSwap = await connection.getBalance(wallet.publicKey);
@@ -418,7 +424,7 @@ export function useDeflatePool() {
       const swapTx = VersionedTransaction.deserialize(Buffer.from(swapTxBase64, "base64"));
       const signedSwap = await wallet.signTransaction(swapTx);
       const swapSig = await connection.sendRawTransaction(signedSwap.serialize());
-      await connection.confirmTransaction(swapSig, "confirmed");
+      await confirmAndVerify(connection, swapSig, "Jupiter swap");
 
       // Step 3: Buy back exactly karmaDeposited KARMA (not all SOL received)
       await new Promise(r => setTimeout(r, 2000));
@@ -452,7 +458,7 @@ export function useDeflatePool() {
         data: Buffer.concat([disc("swap_sol_to_karma"), solBuf]),
       });
       const sig3 = await wallet.sendTransaction(buyTx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig3, "confirmed");
+      await confirmAndVerify(connection, sig3, "KARMA buyback");
       setTxSig(sig3);
     } catch (e: any) { setError(e.message || "Deflate withdraw failed"); }
     setLoading(false);
@@ -486,7 +492,7 @@ export function useSupplyPool() {
       const swapTx = VersionedTransaction.deserialize(Buffer.from(swapTxBase64, "base64"));
       const signedSwap = await wallet.signTransaction(swapTx);
       const swapSig = await connection.sendRawTransaction(signedSwap.serialize());
-      await connection.confirmTransaction(swapSig, "confirmed");
+      await confirmAndVerify(connection, swapSig, "Jupiter swap");
 
       // Step 2: Read actual jitoSOL
       await new Promise(r => setTimeout(r, 2000));
@@ -589,7 +595,7 @@ export function useSupplyPool() {
         data: Buffer.concat([disc("supply_withdraw"), valueBuf]),
       });
       const sig1 = await wallet.sendTransaction(tx1, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig1, "confirmed");
+      await confirmAndVerify(connection, sig1, "Withdraw");
 
       // Step 2: Swap jitoSOL → SOL
       const jitoLamports = Math.floor(jitosolShare * 1e9);
@@ -597,7 +603,7 @@ export function useSupplyPool() {
       const swapTx = VersionedTransaction.deserialize(Buffer.from(swapTxBase64, "base64"));
       const signedSwap = await wallet.signTransaction(swapTx);
       const sig2 = await connection.sendRawTransaction(signedSwap.serialize());
-      await connection.confirmTransaction(sig2, "confirmed");
+      await confirmAndVerify(connection, sig2, "Jupiter swap");
       setTxSig(sig2);
     } catch (e: any) { setError(e.message || "Supply withdraw failed"); }
     setLoading(false);
