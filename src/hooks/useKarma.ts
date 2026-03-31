@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Transaction, PublicKey, SystemProgram, LAMPORTS_PER_SOL, SYSVAR_CLOCK_PUBKEY, SYSVAR_RENT_PUBKEY, VersionedTransaction } from "@solana/web3.js";
+import { Transaction, TransactionMessage, TransactionInstruction, PublicKey, SystemProgram, LAMPORTS_PER_SOL, SYSVAR_CLOCK_PUBKEY, SYSVAR_RENT_PUBKEY, VersionedTransaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
 import { PROGRAM_ID, KARMA_MINT, JITOSOL_MINT, findKarmaStatePDA, findUserStakePDA, findDeflateStatePDA, findDeflateUserStakePDA, findSupplyStatePDA, findSupplyUserStakePDA } from "@/utils/constants";
 import { getSwapTransaction, getJitosolOutAmount, getJitosolToSolSwapTx } from "@/utils/jupiter";
@@ -202,25 +202,34 @@ export function useKarma() {
 
       const solBuf = Buffer.alloc(8); solBuf.writeBigUInt64LE(BigInt(lamports));
 
-      const tx = new Transaction();
-      tx.add(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userKarmaAta, wallet.publicKey, KARMA_MINT));
-      tx.add({
-        programId: PROGRAM_ID,
-        keys: [
-          { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-          { pubkey: ksPDA, isSigner: false, isWritable: true },
-          { pubkey: lpKarmaAta, isSigner: false, isWritable: true },
-          { pubkey: userKarmaAta, isSigner: false, isWritable: true },
-          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-        ],
-        data: Buffer.concat([disc("swap_sol_to_karma"), solBuf]),
-      });
+      const instructions = [
+        createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userKarmaAta, wallet.publicKey, KARMA_MINT),
+        new TransactionInstruction({
+          programId: PROGRAM_ID,
+          keys: [
+            { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+            { pubkey: ksPDA, isSigner: false, isWritable: true },
+            { pubkey: lpKarmaAta, isSigner: false, isWritable: true },
+            { pubkey: userKarmaAta, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          ],
+          data: Buffer.concat([disc("swap_sol_to_karma"), solBuf]),
+        }),
+      ];
+
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
+      const messageV0 = new TransactionMessage({
+        payerKey: wallet.publicKey,
+        recentBlockhash: blockhash,
+        instructions,
+      }).compileToV0Message();
+      const tx = new VersionedTransaction(messageV0);
 
       const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
       await confirmAndVerify(connection, sig, "KARMA buy");
       setTxSig(sig);
-    } catch (e: any) { setError(e.message || "Swap failed"); }
+    } catch (e: any) { setError(e.message || e.toString() || "Swap failed"); }
     setLoading(false);
   }, [wallet, connection, ksPDA]);
 
@@ -235,23 +244,33 @@ export function useKarma() {
 
       const karmaBuf = Buffer.alloc(8); karmaBuf.writeBigUInt64LE(BigInt(karmaLamports));
 
-      const tx = new Transaction().add({
-        programId: PROGRAM_ID,
-        keys: [
-          { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-          { pubkey: ksPDA, isSigner: false, isWritable: true },
-          { pubkey: userKarmaAta, isSigner: false, isWritable: true },
-          { pubkey: lpKarmaAta, isSigner: false, isWritable: true },
-          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-        ],
-        data: Buffer.concat([disc("swap_karma_to_sol"), karmaBuf]),
-      });
+      const instructions = [
+        new TransactionInstruction({
+          programId: PROGRAM_ID,
+          keys: [
+            { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+            { pubkey: ksPDA, isSigner: false, isWritable: true },
+            { pubkey: userKarmaAta, isSigner: false, isWritable: true },
+            { pubkey: lpKarmaAta, isSigner: false, isWritable: true },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          ],
+          data: Buffer.concat([disc("swap_karma_to_sol"), karmaBuf]),
+        }),
+      ];
+
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
+      const messageV0 = new TransactionMessage({
+        payerKey: wallet.publicKey,
+        recentBlockhash: blockhash,
+        instructions,
+      }).compileToV0Message();
+      const tx = new VersionedTransaction(messageV0);
 
       const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
       await confirmAndVerify(connection, sig, "KARMA sell");
       setTxSig(sig);
-    } catch (e: any) { setError(e.message || "Swap failed"); }
+    } catch (e: any) { setError(e.message || e.toString() || "Swap failed"); }
     setLoading(false);
   }, [wallet, connection, ksPDA]);
 
