@@ -95,7 +95,7 @@ export function useKarma() {
       });
 
       const sig = await wallet.sendTransaction(depositTx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig, "confirmed");
+      await confirmAndVerify(connection, sig, "Deposit");
       setTxSig(sig);
     } catch (e: any) {
       const msg = e?.message || "Deposit failed";
@@ -135,7 +135,7 @@ export function useKarma() {
       });
 
       const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig, "confirmed");
+      await confirmAndVerify(connection, sig, "Claim");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Claim failed"); }
     setLoading(false);
@@ -350,7 +350,7 @@ export function useDeflatePool() {
         data: Buffer.concat([disc("deflate_deposit"), kBuf, sBuf, jBuf]),
       });
       const sig = await wallet.sendTransaction(depositTx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig, "confirmed");
+      await confirmAndVerify(connection, sig, "Deflate deposit");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Deflate deposit failed"); }
     setLoading(false);
@@ -376,7 +376,7 @@ export function useDeflatePool() {
         data: Buffer.concat([disc("deflate_claim"), valueBuf]),
       });
       const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig, "confirmed");
+      await confirmAndVerify(connection, sig, "Deflate claim");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Deflate claim failed"); }
     setLoading(false);
@@ -525,7 +525,7 @@ export function useSupplyPool() {
         data: Buffer.concat([disc("supply_deposit"), solBuf, jitBuf]),
       });
       const sig = await wallet.sendTransaction(depositTx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig, "confirmed");
+      await confirmAndVerify(connection, sig, "Supply claim");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Supply deposit failed"); }
     setLoading(false);
@@ -555,7 +555,7 @@ export function useSupplyPool() {
         data: Buffer.concat([disc("supply_claim"), valueBuf]),
       });
       const sig = await wallet.sendTransaction(tx, connection, { skipPreflight: true });
-      await connection.confirmTransaction(sig, "confirmed");
+      await confirmAndVerify(connection, sig, "Supply deposit");
       setTxSig(sig);
     } catch (e: any) { setError(e.message || "Supply claim failed"); }
     setLoading(false);
