@@ -36,11 +36,30 @@
 .kCoinBtn:hover { opacity: 1; }
 .kCoinActive { opacity: 1; }
 
-.lastTxBar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
-.lastTxLabel { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.3px; }
-.lastTxTime { font-size: 10px; color: #666; }
-.lastTxLink { font-size: 11px; color: #8b5cf6; text-decoration: none; font-family: monospace; margin-left: auto; }
+.lastTxBar { padding: 12px 14px; border-radius: 10px; background: #16161e; border: 1px solid #222230; margin-bottom: 12px; }
+.lastTxTop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.lastTxLink { font-size: 11px; color: #8b5cf6; text-decoration: none; font-family: monospace; }
 .lastTxLink:hover { text-decoration: underline; }
+.lastTxTime { font-size: 10px; color: #666; }
+.lastTxDetails { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+.lastTxType { color: #ccc; font-weight: 600; background: #1e1e2a; padding: 2px 8px; border-radius: 6px; }
+.lastTxAmount { color: #8b5cf6; font-weight: 700; font-family: monospace; }
+.lastTxWallet { color: #555; font-family: monospace; margin-left: auto; }
+
+/* Tokenomics Carousel */
+.tokCarousel { display: flex; align-items: stretch; position: relative; min-height: 200px; }
+.tokNav { width: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; border-radius: 10px; flex-shrink: 0; user-select: none; }
+.tokNav:hover { background: rgba(139, 92, 246, 0.08); }
+.tokNavLeft { border-radius: 10px 0 0 10px; }
+.tokNavRight { border-radius: 0 10px 10px 0; }
+.tokArrow { font-size: 22px; color: #444; transition: color 0.2s; opacity: 0; }
+.tokNav:hover .tokArrow { opacity: 1; color: #8b5cf6; }
+.tokContent { flex: 1; padding: 4px 8px; }
+.tokHeader { font-size: 14px; font-weight: 700; color: #ddd; margin-bottom: 8px; text-align: center; }
+.tokDots { display: flex; justify-content: center; gap: 5px; margin-bottom: 12px; }
+.tokDot { width: 6px; height: 6px; border-radius: 50%; background: #333; transition: background 0.2s; }
+.tokDotActive { background: #8b5cf6; }
+.mono { font-family: monospace; font-size: 12px; }
 
 .priceRow { display: flex; align-items: baseline; gap: 6px; margin-bottom: 16px; }
 .priceBig { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }

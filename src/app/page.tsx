@@ -37,7 +37,9 @@ export default function HomePage() {
   const settingsRef = useRef<HTMLDivElement>(null);
   const [welcomeHover, setWelcomeHover] = useState(false);
   const [showSwap, setShowSwap] = useState(true);
-  const [lastTx, setLastTx] = useState<{ sig: string; time: number } | null>(null);
+  const [lastTx, setLastTx] = useState<{ sig: string; time: number; type: string; amount: string; wallet: string } | null>(null);
+  const [tokPage, setTokPage] = useState(0);
+  const tokPages = ["General", "Mint Pool", "Deflation Pool", "Supply Pool", "Liquidity Pool", "Distribution", "Chart"];
 
   const [stakeAmt, setStakeAmt] = useState("0.1");
   const [deflateAmt, setDeflateAmt] = useState("0.1");
@@ -61,10 +63,52 @@ export default function HomePage() {
       const u = await fetchUserStake(connection, wallet.publicKey); setUserStake(u);
       const du = await fetchDeflateUserStake(connection, wallet.publicKey); setDeflateUserStake(du);
       const su = await fetchSupplyUserStake(connection, wallet.publicKey); setSupplyUserStake(su);
-      // Fetch last tx
+      // Fetch last tx with details
       try {
         const sigs = await connection.getSignaturesForAddress(wallet.publicKey, { limit: 1 });
-        if (sigs.length > 0) setLastTx({ sig: sigs[0].signature, time: sigs[0].blockTime || 0 });
+        if (sigs.length > 0) {
+          const sig = sigs[0];
+          const memo = sig.memo || "";
+          let type = "Unknown";
+          if (memo.includes("swap") || memo.includes("Swap")) type = "Swap";
+          // Try to determine type from recent program interactions
+          try {
+            const txInfo = await connection.getTransaction(sig.signature, { maxSupportedTransactionVersion: 0 });
+            if (txInfo?.meta?.logMessages) {
+              const logs = txInfo.meta.logMessages.join(" ");
+              if (logs.includes("CdVUE5ieijJbUeRLmRB1AsSTYyzdy2w4sg7QMCsUzBB5")) {
+                const pre = txInfo.meta.preBalances[0] || 0;
+                const post = txInfo.meta.postBalances[0] || 0;
+                const diff = (post - pre) / 1e9;
+                const absDiff = Math.abs(diff).toFixed(4);
+                // Check token changes
+                const preTokens = txInfo.meta.preTokenBalances || [];
+                const postTokens = txInfo.meta.postTokenBalances || [];
+                let karmaChange = 0;
+                for (const pt of postTokens) {
+                  if (pt.owner === wallet.publicKey.toBase58()) {
+                    const pre = preTokens.find((p: any) => p.accountIndex === pt.accountIndex);
+                    const preAmt = pre ? parseFloat(pre.uiTokenAmount?.uiAmountString || "0") : 0;
+                    const postAmt = parseFloat(pt.uiTokenAmount?.uiAmountString || "0");
+                    karmaChange = postAmt - preAmt;
+                  }
+                }
+                if (karmaChange > 0.0001) { type = "Buy KARMA"; }
+                else if (karmaChange < -0.0001) { type = "Sell KARMA"; }
+                else if (diff < -0.01) { type = "Deposit"; }
+                else if (diff > 0.01) { type = "Withdraw"; }
+                else { type = "Karma"; }
+                setLastTx({ sig: sig.signature, time: sig.blockTime || 0, type, amount: `${diff > 0 ? "+" : ""}${diff.toFixed(4)} SOL`, wallet: wallet.publicKey.toBase58() });
+              } else {
+                setLastTx({ sig: sig.signature, time: sig.blockTime || 0, type: "Transaction", amount: "", wallet: wallet.publicKey.toBase58() });
+              }
+            } else {
+              setLastTx({ sig: sig.signature, time: sig.blockTime || 0, type: "Transaction", amount: "", wallet: wallet.publicKey.toBase58() });
+            }
+          } catch {
+            setLastTx({ sig: sig.signature, time: sig.blockTime || 0, type: "Transaction", amount: "", wallet: wallet.publicKey.toBase58() });
+          }
+        }
       } catch {}
     }
   }, [connection, wallet.publicKey]);
@@ -288,9 +332,15 @@ export default function HomePage() {
             {/* ── LAST TX BAR ── */}
             {wallet.connected && lastTx && (
               <div className={styles.lastTxBar}>
-                <span className={styles.lastTxLabel}>Last tx:</span>
-                <span className={styles.lastTxTime}>{fmtTime(lastTx.time)}</span>
-                <a href={`https://solscan.io/tx/${lastTx.sig}`} target="_blank" rel="noopener noreferrer" className={styles.lastTxLink}>{lastTx.sig.slice(0, 16)}...{lastTx.sig.slice(-8)} ↗</a>
+                <div className={styles.lastTxTop}>
+                  <a href={`https://solscan.io/tx/${lastTx.sig}`} target="_blank" rel="noopener noreferrer" className={styles.lastTxLink}>Last TX: {lastTx.sig.slice(0, 20)}...{lastTx.sig.slice(-8)} ↗</a>
+                  <span className={styles.lastTxTime}>{fmtTime(lastTx.time)}</span>
+                </div>
+                <div className={styles.lastTxDetails}>
+                  <span className={styles.lastTxType}>{lastTx.type}</span>
+                  {lastTx.amount && <span className={styles.lastTxAmount}>{lastTx.amount}</span>}
+                  <span className={styles.lastTxWallet}>{lastTx.wallet.slice(0, 4)}...{lastTx.wallet.slice(-4)}</span>
+                </div>
               </div>
             )}
           </>)}
@@ -298,53 +348,69 @@ export default function HomePage() {
           {/* ── divider ── */}
           <div className={styles.sectionDivider} />
 
-          {/* ── TOKENOMICS ── */}
+          {/* ── TOKENOMICS CAROUSEL ── */}
           <div className={styles.panel}>
-            <Collapsible title="Karma Tokenomics" defaultOpen={true} accent tooltip="Live Karma token economics">
-              <div className={styles.posRow}><span>Total supply</span><span className={styles.bold}>{totalSupply.toFixed(4)} KARMA</span></div>
-              <div className={styles.posRow}><span>KARMA price</span><span className={styles.bold}>{fmt(karmaPrice)}</span></div>
-              <div className={styles.posRow}><span>Market cap</span><span className={styles.bold}>{fmt(totalSupply * karmaPrice, 2)}</span></div>
-              <div className={styles.posRow}><span>Holders</span><span className={styles.bold}>{holders}</span></div>
-              {(() => {
-                // Mint rate: SOL staked * APY / 365 converted to KARMA at market rate per day
-                const mintSolStaked = state.totalSolDeposited;
-                const mintRateDaily = mintSolStaked > 0 && karmaPrice > 0 ? (mintSolStaked * APY / 365) / karmaPrice : 0;
-                // Deflation rate: SOL equivalent in deflate vault * APY / 365 (SOL added to LP per day)
-                const defSolStaked = deflateState ? deflateState.totalSolDeposited : 0;
-                const defRateDaily = defSolStaked * APY / 365;
-                const defRateKarma = karmaPrice > 0 ? defRateDaily / karmaPrice : 0;
-                // Supply rates: SOL staked in supply * APY / 365
-                const supSolStaked = supplyState ? supplyState.totalSolDeposited : 0;
-                const supSolRate = supSolStaked * APY / 365;
-                const supKarmaRate = karmaPrice > 0 ? supSolRate / karmaPrice : 0;
-                return (<>
-                  <div className={styles.posRow}><span>Karma mint rate</span><span className={styles.green}>+{mintRateDaily.toFixed(6)} / day</span></div>
-                  <div className={styles.posRow}><span>Karma deflation rate</span><span className={styles.green}>+{defRateKarma.toFixed(6)} / day</span></div>
-                  <div className={styles.posRow}><span>SOL liquidity supply rate</span><span className={styles.green}>+{supSolRate.toFixed(6)} / day</span></div>
-                  <div className={styles.posRow}><span>KARMA liquidity supply rate</span><span className={styles.green}>+{supKarmaRate.toFixed(6)} / day</span></div>
-                </>);
-              })()}
-              <div className={styles.subsection}><Collapsible title="Mint Pool" defaultOpen={true}>
-                <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(state.totalSolDeposited, 2)}</span></div>
-                <div className={styles.posRow}><span>Stakers</span><span>{state.totalStakers}</span></div>
-                <div className={styles.posRow}><span>Karma minted</span><span className={styles.green}>{totalKarmaMinted.toFixed(4)} KARMA</span></div>
-              </Collapsible></div>
-              {deflateState && (<div className={styles.subsection}><Collapsible title="Deflation Pool" defaultOpen={true}>
-                <div className={styles.posRow}><span>Total KARMA staked</span><span>{deflateState.totalKarmaDeposited.toFixed(4)} KARMA</span></div>
-                <div className={styles.posRow}><span>Stakers</span><span>{deflateState.totalStakers}</span></div>
-                <div className={styles.posRow}><span>Supply reduced</span><span className={styles.green}>{deflateSupplyReduced.toFixed(4)} KARMA</span></div>
-              </Collapsible></div>)}
-              {supplyState && (<div className={styles.subsection}><Collapsible title="Supply Pool" defaultOpen={true}>
-                <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(supplyState.totalSolDeposited)}</span></div>
-                <div className={styles.posRow}><span>Stakers</span><span>{supplyState.totalStakers}</span></div>
-                <div className={styles.posRow}><span>LP added</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)} + {supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
-              </Collapsible></div>)}
-              <div className={styles.subsection}><Collapsible title="Liquidity Pool" defaultOpen={true}>
-                <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
-                <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
-              </Collapsible></div>
-              <div className={styles.subsection}><Collapsible title="Supply Distribution" defaultOpen={true}>
-                {(() => {
+            <div className={styles.tokCarousel}>
+              <div className={styles.tokNav + " " + styles.tokNavLeft} onClick={() => setTokPage((tokPage - 1 + tokPages.length) % tokPages.length)}>
+                <span className={styles.tokArrow}>‹</span>
+              </div>
+              <div className={styles.tokContent}>
+                <div className={styles.tokHeader}>{tokPages[tokPage]}</div>
+                <div className={styles.tokDots}>{tokPages.map((_, i) => <span key={i} className={`${styles.tokDot} ${i === tokPage ? styles.tokDotActive : ""}`} />)}</div>
+
+                {tokPage === 0 && (<>
+                  <div className={styles.posRow}><span>Total supply</span><span className={styles.bold}>{totalSupply.toFixed(4)} KARMA</span></div>
+                  <div className={styles.posRow}><span>KARMA price</span><span className={styles.bold}>{fmt(karmaPrice)}</span></div>
+                  <div className={styles.posRow}><span>Market cap</span><span className={styles.bold}>{fmt(totalSupply * karmaPrice, 2)}</span></div>
+                  <div className={styles.posRow}><span>Holders</span><span className={styles.bold}>{holders}</span></div>
+                  {(() => {
+                    const mintSolStaked = state.totalSolDeposited;
+                    const mintRateDaily = mintSolStaked > 0 && karmaPrice > 0 ? (mintSolStaked * APY / 365) / karmaPrice : 0;
+                    const defSolStaked = deflateState ? deflateState.totalSolDeposited : 0;
+                    const defRateDaily = defSolStaked * APY / 365;
+                    const defRateKarma = karmaPrice > 0 ? defRateDaily / karmaPrice : 0;
+                    const supSolStaked = supplyState ? supplyState.totalSolDeposited : 0;
+                    const supSolRate = supSolStaked * APY / 365;
+                    const supKarmaRate = karmaPrice > 0 ? supSolRate / karmaPrice : 0;
+                    return (<>
+                      <div className={styles.posRow}><span>Karma mint rate</span><span className={styles.green}>+{mintRateDaily.toFixed(6)} / day</span></div>
+                      <div className={styles.posRow}><span>Karma deflation rate</span><span className={styles.green}>+{defRateKarma.toFixed(6)} / day</span></div>
+                      <div className={styles.posRow}><span>SOL liquidity supply rate</span><span className={styles.green}>+{supSolRate.toFixed(6)} / day</span></div>
+                      <div className={styles.posRow}><span>KARMA liquidity supply rate</span><span className={styles.green}>+{supKarmaRate.toFixed(6)} / day</span></div>
+                    </>);
+                  })()}
+                </>)}
+
+                {tokPage === 1 && (<>
+                  <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(state.totalSolDeposited, 2)}</span></div>
+                  <div className={styles.posRow}><span>Stakers</span><span>{state.totalStakers}</span></div>
+                  <div className={styles.posRow}><span>Karma minted</span><span className={styles.green}>{totalKarmaMinted.toFixed(4)} KARMA</span></div>
+                  <div className={styles.posRow}><span>APY</span><span className={styles.bold}>{(APY * 100).toFixed(1)}%</span></div>
+                  <div className={styles.posRow}><span>Yield source</span><span>jitoSOL staking</span></div>
+                </>)}
+
+                {tokPage === 2 && deflateState && (<>
+                  <div className={styles.posRow}><span>Total KARMA staked</span><span>{deflateState.totalKarmaDeposited.toFixed(4)} KARMA</span></div>
+                  <div className={styles.posRow}><span>Stakers</span><span>{deflateState.totalStakers}</span></div>
+                  <div className={styles.posRow}><span>Supply reduced</span><span className={styles.green}>{deflateSupplyReduced.toFixed(4)} KARMA</span></div>
+                  <div className={styles.posRow}><span>Mechanism</span><span>Buy + Burn</span></div>
+                </>)}
+
+                {tokPage === 3 && supplyState && (<>
+                  <div className={styles.posRow}><span>Total SOL staked</span><span>{fmt(supplyState.totalSolDeposited)}</span></div>
+                  <div className={styles.posRow}><span>Stakers</span><span>{supplyState.totalStakers}</span></div>
+                  <div className={styles.posRow}><span>LP added</span><span className={styles.green}>{fmt(supplyState.totalYieldDonated)} + {supplyState.totalKarmaMinted.toFixed(4)} KARMA</span></div>
+                  <div className={styles.posRow}><span>Purpose</span><span>Deepen LP liquidity</span></div>
+                </>)}
+
+                {tokPage === 4 && (<>
+                  <div className={styles.posRow}><span>SOL reserve</span><span>{fmt(state.lpSol)}</span></div>
+                  <div className={styles.posRow}><span>KARMA reserve</span><span>{state.lpKarma.toFixed(4)} KARMA</span></div>
+                  <div className={styles.posRow}><span>k (constant)</span><span className={styles.mono}>{(state.lpSol * state.lpKarma).toFixed(4)}</span></div>
+                  <div className={styles.posRow}><span>Price</span><span className={styles.bold}>{karmaPrice.toFixed(6)} SOL/KARMA</span></div>
+                </>)}
+
+                {tokPage === 5 && (() => {
                   const lpK = state.lpKarma;
                   const stakedK = deflateState ? deflateState.totalKarmaDeposited : 0;
                   const holdersK = Math.max(0, totalSupply - lpK);
@@ -360,12 +426,16 @@ export default function HomePage() {
                     <div className={styles.legend}><span><span className={styles.dotHolders} /> Holders</span><span><span className={styles.dotLP} /> LP</span><span><span className={styles.dotStaked} /> Staked</span></div>
                   </>);
                 })()}
-              </Collapsible></div>
-            </Collapsible>
-          </div>
 
-          {/* ── GRAPH ── */}
-          <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
+                {tokPage === 6 && (
+                  <PriceChart karmaPrice={karmaPrice} solPrice={solPrice} />
+                )}
+              </div>
+              <div className={styles.tokNav + " " + styles.tokNavRight} onClick={() => setTokPage((tokPage + 1) % tokPages.length)}>
+                <span className={styles.tokArrow}>›</span>
+              </div>
+            </div>
+          </div>
 
           {/* ── divider ── */}
           <div className={styles.sectionDivider} />
