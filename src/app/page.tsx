@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { fetchKarmaState, fetchUserStake, fetchKarmaTotalSupply, fetchKarmaHolders, fetchDeflateState, fetchDeflateUserStake, fetchSupplyState, fetchSupplyUserStake, KarmaState, UserStake, DeflateState, DeflateUserStake, SupplyState } from "@/utils/accounts";
+import { KARMA_MINT } from "@/utils/constants";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { getJitosolRate } from "@/utils/jupiter";
 import { useKarma, useDeflatePool, useSupplyPool } from "@/hooks/useKarma";
 import { useSettings } from "@/contexts/Settings";
@@ -47,6 +49,8 @@ export default function HomePage() {
   const [swapAmt, setSwapAmt] = useState("0.01");
   const [swapDir, setSwapDir] = useState<"buy" | "sell">("buy");
   const [activeTab, setActiveTab] = useState<"swap" | "mint" | "supply" | "deflate">("swap");
+  const [solBalance, setSolBalance] = useState(0);
+  const [karmaBalance, setKarmaBalance] = useState(0);
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false); };
@@ -63,6 +67,16 @@ export default function HomePage() {
       const u = await fetchUserStake(connection, wallet.publicKey); setUserStake(u);
       const du = await fetchDeflateUserStake(connection, wallet.publicKey); setDeflateUserStake(du);
       const su = await fetchSupplyUserStake(connection, wallet.publicKey); setSupplyUserStake(su);
+      // Fetch balances
+      try {
+        const sol = await connection.getBalance(wallet.publicKey);
+        setSolBalance(sol / 1e9);
+      } catch {}
+      try {
+        const karmaAta = getAssociatedTokenAddressSync(KARMA_MINT, wallet.publicKey);
+        const bal = await connection.getTokenAccountBalance(karmaAta);
+        setKarmaBalance(parseFloat(bal.value.uiAmountString || "0"));
+      } catch { setKarmaBalance(0); }
       // Fetch last tx with details
       try {
         const sigs = await connection.getSignaturesForAddress(wallet.publicKey, { limit: 1 });
@@ -175,6 +189,7 @@ export default function HomePage() {
         <div className={styles.logo}><span className={styles.logoK}>K</span><span className={styles.logoText}>Karma</span></div>
         {state && <div className={styles.headerPrice}>{karmaPrice.toFixed(4)} SOL<span className={styles.headerSlash}>/</span><span className={styles.headerKarma}>KARMA</span></div>}
         <div className={styles.headerRight}>
+          {wallet.connected && <span className={styles.headerKarmaBalance}>{karmaBalance.toFixed(2)} K</span>}
           <WalletMultiButton className={styles.walletBtn} />
           <div className={styles.settingsWrap} ref={settingsRef}>
             <button className={styles.settingsBtn} onClick={() => setSettingsOpen(!settingsOpen)}>
@@ -243,13 +258,20 @@ export default function HomePage() {
                   <div className={styles.swapLabel}>{swapDir === "buy" ? "You pay" : "You sell"}</div>
                   <div className={styles.swapBox}>
                     <input type="number" value={swapAmt} onChange={e => setSwapAmt(e.target.value)} min="0.001" step="0.01" className={styles.swapInput} />
-                    <span className={styles.swapBadge}>{swapDir === "buy" ? "SOL" : "KARMA"}</span>
+                    <div className={styles.swapBalArea}>
+                      <button className={styles.swapHalf} onClick={() => setSwapAmt(((swapDir === "buy" ? solBalance : karmaBalance) / 2).toFixed(6))}>½</button>
+                      <span className={styles.swapBal} onClick={() => setSwapAmt((swapDir === "buy" ? Math.max(0, solBalance - 0.01) : karmaBalance).toFixed(6))}>{(swapDir === "buy" ? solBalance : karmaBalance).toFixed(4)}</span>
+                      <span className={styles.swapBadge}>{swapDir === "buy" ? "SOL" : "KARMA"}</span>
+                    </div>
                   </div>
                   <button className={styles.swapArrowBtn} onClick={() => setSwapDir(swapDir === "buy" ? "sell" : "buy")}>⇅</button>
                   <div className={styles.swapLabel}>You receive</div>
                   <div className={`${styles.swapBox} ${styles.swapBoxOut}`}>
                     <span className={styles.swapOutAmt}>{swapOut > 0 ? swapOut.toFixed(6) : "0.000000"}</span>
-                    <span className={`${styles.swapBadge} ${styles.swapBadgeOut}`}>{swapDir === "buy" ? "KARMA" : "SOL"}</span>
+                    <div className={styles.swapBalArea}>
+                      <span className={styles.swapBal}>{(swapDir === "buy" ? karmaBalance : solBalance).toFixed(4)}</span>
+                      <span className={`${styles.swapBadge} ${styles.swapBadgeOut}`}>{swapDir === "buy" ? "KARMA" : "SOL"}</span>
+                    </div>
                   </div>
                   {swapOut > 0 && state && (
                     <div className={styles.swapRate}>

@@ -6,7 +6,9 @@
 .headerPrice { font-size: 14px; font-weight: 700; color: #e8e8ea; letter-spacing: -0.3px; }
 .headerSlash { color: #444; font-weight: 300; margin: 0 2px; }
 .headerKarma { color: #8b5cf6; }
-.walletBtn { font-size: 12px !important; height: 34px !important; padding: 0 16px !important; border-radius: 17px !important; background: #8b5cf6 !important; }
+.walletBtn { font-size: 12px !important; height: 34px !important; padding: 0 12px !important; border-radius: 17px !important; background: transparent !important; border: 1px solid #333 !important; }
+.walletBtn:hover { background: #1a1a25 !important; }
+.headerKarmaBalance { font-size: 12px; font-weight: 700; color: #8b5cf6; margin-right: 8px; }
 
 /* Settings */
 .settingsWrap { position: relative; }
@@ -73,6 +75,11 @@
 .swapBox { display: flex; align-items: center; gap: 8px; background: #1a1a25; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px; }
 .swapBoxOut { border: 1px solid #8b5cf630; }
 .swapInput { flex: 1; background: transparent; border: none; color: #e8e8ea; font-size: 18px; font-weight: 700; font-family: inherit; outline: none; min-width: 0; }
+.swapBalArea { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.swapBal { font-size: 11px; color: #666; cursor: pointer; font-family: monospace; }
+.swapBal:hover { color: #8b5cf6; }
+.swapHalf { font-size: 10px; font-weight: 800; color: #555; background: #222230; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
+.swapHalf:hover { color: #8b5cf6; background: #2a2a3a; }
 .swapBadge { font-size: 13px; font-weight: 700; color: #888; background: #222230; padding: 4px 10px; border-radius: 6px; }
 .swapBadgeOut { color: #8b5cf6; background: #8b5cf615; }
 .swapOutAmt { flex: 1; font-size: 18px; font-weight: 700; color: #8b5cf6; }
