@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Transaction, TransactionMessage, TransactionInstruction, PublicKey, SystemProgram, LAMPORTS_PER_SOL, SYSVAR_CLOCK_PUBKEY, SYSVAR_RENT_PUBKEY, VersionedTransaction } from "@solana/web3.js";
+import { Transaction, TransactionMessage, TransactionInstruction, PublicKey, SystemProgram, LAMPORTS_PER_SOL, SYSVAR_CLOCK_PUBKEY, SYSVAR_RENT_PUBKEY, VersionedTransaction, ComputeBudgetProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
 import { PROGRAM_ID, KARMA_MINT, JITOSOL_MINT, findKarmaStatePDA, findUserStakePDA, findDeflateStatePDA, findDeflateUserStakePDA, findSupplyStatePDA, findSupplyUserStakePDA } from "@/utils/constants";
 import { getSwapTransaction, getJitosolOutAmount, getJitosolToSolSwapTx } from "@/utils/jupiter";
@@ -203,6 +203,8 @@ export function useKarma() {
       const solBuf = Buffer.alloc(8); solBuf.writeBigUInt64LE(BigInt(lamports));
 
       const instructions = [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 40_000 }),
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
         createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userKarmaAta, wallet.publicKey, KARMA_MINT),
         new TransactionInstruction({
           programId: PROGRAM_ID,
@@ -245,6 +247,8 @@ export function useKarma() {
       const karmaBuf = Buffer.alloc(8); karmaBuf.writeBigUInt64LE(BigInt(karmaLamports));
 
       const instructions = [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 40_000 }),
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
         new TransactionInstruction({
           programId: PROGRAM_ID,
           keys: [
